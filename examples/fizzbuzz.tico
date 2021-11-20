@@ -1,0 +1,39 @@
+/*
+args:
+	count: number of numbers to print either "Fizz", "Buzz" or "FizzBuzz"
+*/
+
+func fizzbuzz start
+	max rev set
+	i 1 set
+
+	loop start
+		i get 1 > if start
+			", " dump
+		end
+
+		i get 3 % 0 ==
+		if start
+			"Fizz" dump
+		end
+
+		i get 5 % 0 ==
+		if start
+			"Buzz" dump
+		end
+
+		i get 3 % 0 ==
+		i get 5 % 0 ==
+		or not
+		if start
+			i get dump
+		end
+
+		i i get 1 + set
+		i get max get > if break
+	end
+end
+
+"Computing Fizz Buzz " count get + " times:\n\n" + dump
+
+count get fizzbuzz call

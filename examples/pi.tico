@@ -1,0 +1,53 @@
+/*
+args:
+	digits: number of digits to compute pi
+*/
+
+func get_pi start
+	q 1n set
+	r 0n set
+	t 1n set
+	k 1n set
+	n 3n set
+	l 3n set
+
+	res "" set
+
+	decimal rev set
+	counter 0 set
+
+	loop start
+		4n q get * r get + t get -
+		n get t get *
+		<
+		dup if start
+			n get dump
+			res res get n get + set
+
+			decimal get counter get == if break
+			counter get 0 == if start "." dump res res get "." + set end
+
+			counter counter get 1 + set
+			nr 10n r get n get t get * - * set
+
+			n 10n 3n q get * r get + * t get / 10n n get * - set
+			q q get 10n * set
+			r nr get set
+		end
+		not if start
+			nr 2n q get * r get + l get * set
+			nn q get 7n k get * * 2n + r get l get * + t get l get * / set
+			q q get k get * set
+			t t get l get * set
+			l l get 2n + set
+			k k get 1n + set
+			n nn get set
+			r nr get set
+		end
+	end
+end
+
+"Computing " digits get + " digits of PI:\n\n" + dump
+
+digits get get_pi call
+"\n" dump
