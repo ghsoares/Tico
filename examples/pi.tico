@@ -10,11 +10,8 @@ func get_pi start
 	k 1n set
 	n 3n set
 	l 3n set
-
-	res "" set
-
-	decimal rev set
-	counter 0 set
+ 
+	0
 
 	loop start
 		4n q get * r get + t get -
@@ -22,12 +19,15 @@ func get_pi start
 		<
 		dup if start
 			n get dump
-			res res get n get + set
 
-			decimal get counter get == if break
-			counter get 0 == if start "." dump res res get "." + set end
+			stack
 
-			counter counter get 1 + set
+			dup 2 over > if break
+			dup 0 == if start
+				"." dump
+			end
+
+			1 +
 			nr 10n r get n get t get * - * set
 
 			n 10n 3n q get * r get + * t get / 10n n get * - set

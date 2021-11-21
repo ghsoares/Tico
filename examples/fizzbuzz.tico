@@ -1,6 +1,6 @@
 /*
 args:
-	count: number of numbers to print either "Fizz", "Buzz" or "FizzBuzz"
+	count: count of numbers to print either "Fizz", "Buzz" or "FizzBuzz"
 */
 
 func fizzbuzz start
@@ -37,3 +37,4 @@ end
 "Computing Fizz Buzz " count get + " times:\n\n" + dump
 
 count get fizzbuzz call
+"\n" dump

@@ -2,7 +2,7 @@ import { Command, CommandEnum } from "./tico";
 import Tokenizer from "./tokenizer";
 
 let iotaState = 0;
-function IOTA(reset = false) {
+function iota(reset = false) {
 	if (reset) {
 		let prev = iotaState;
 		iotaState = 0;
@@ -13,46 +13,47 @@ function IOTA(reset = false) {
 
 const TokenEnum = {
 	// Literals
-	LT_BIGINT: IOTA(),
-	LT_NUMBER: IOTA(),
-	LT_STRING: IOTA(),
+	LT_BIGINT: iota(),
+	LT_NUMBER: iota(),
+	LT_STRING: iota(),
 	// Operations
-	OP_DUMP: IOTA(),
-	OP_DROP: IOTA(),
-	OP_STCK: IOTA(),
-	OP_DUPL: IOTA(),
-	OP_REV: IOTA(),
-	OP_FUNC: IOTA(),
-	OP_CALL: IOTA(),
-	OP_LOOP: IOTA(),
-	OP_BREK: IOTA(),
-	OP_STRT: IOTA(),
-	OP_END: IOTA(),
-	OP_SET: IOTA(),
-	OP_GET: IOTA(),
-	OP_IF: IOTA(),
-	OP_STR: IOTA(),
-	OP_LEN: IOTA(),
+	OP_DUMP: iota(),
+	OP_DROP: iota(),
+	OP_STCK: iota(),
+	OP_DUPL: iota(),
+	OP_OVER: iota(),
+	OP_REV: iota(),
+	OP_FUNC: iota(),
+	OP_CALL: iota(),
+	OP_LOOP: iota(),
+	OP_BREK: iota(),
+	OP_STRT: iota(),
+	OP_END: iota(),
+	OP_SET: iota(),
+	OP_GET: iota(),
+	OP_IF: iota(),
+	OP_STR: iota(),
+	OP_LEN: iota(),
 	// Binary operations
-	OP_ADD: IOTA(),
-	OP_SUB: IOTA(),
-	OP_MLT: IOTA(),
-	OP_DIV: IOTA(),
-	OP_MOD: IOTA(),
+	OP_ADD: iota(),
+	OP_SUB: iota(),
+	OP_MLT: iota(),
+	OP_DIV: iota(),
+	OP_MOD: iota(),
 	// Binary comparison operations
-	BOP_GT: IOTA(),
-	BOP_LT: IOTA(),
-	BOP_GTE: IOTA(),
-	BOP_LTE: IOTA(),
-	BOP_EQ: IOTA(),
-	BOP_NEQ: IOTA(),
-	BOP_NOT: IOTA(),
-	BOP_AND: IOTA(),
-	BOP_OR: IOTA(),
+	BOP_GT: iota(),
+	BOP_LT: iota(),
+	BOP_GTE: iota(),
+	BOP_LTE: iota(),
+	BOP_EQ: iota(),
+	BOP_NEQ: iota(),
+	BOP_NOT: iota(),
+	BOP_AND: iota(),
+	BOP_OR: iota(),
 
-	IDFR: IOTA(),
+	IDFR: iota(),
 
-	MAX: IOTA(true)
+	MAX: iota(true)
 }
 
 export default class Parser {
@@ -81,6 +82,7 @@ export default class Parser {
 			case TokenEnum.OP_DROP: return [/drop/i];
 			case TokenEnum.OP_STCK: return [/stack/i];
 			case TokenEnum.OP_DUPL: return [/dup/i];
+			case TokenEnum.OP_OVER: return [/over/i];
 			case TokenEnum.OP_REV: return [/rev/i];
 			case TokenEnum.OP_FUNC: return [/func/i];
 			case TokenEnum.OP_CALL: return [/call/i];
@@ -145,6 +147,7 @@ export default class Parser {
 				case TokenEnum.OP_DROP: commands.push([CommandEnum.OP_DROP, null, tkLine, tkColumn]); break;
 				case TokenEnum.OP_STCK: commands.push([CommandEnum.OP_STCK, null, tkLine, tkColumn]); break;
 				case TokenEnum.OP_DUPL: commands.push([CommandEnum.OP_DUPL, null, tkLine, tkColumn]); break;
+				case TokenEnum.OP_OVER: commands.push([CommandEnum.OP_OVER, null, tkLine, tkColumn]); break;
 				case TokenEnum.OP_REV: commands.push([CommandEnum.OP_REV, null, tkLine, tkColumn]); break;
 				case TokenEnum.OP_FUNC: {
 					[tkType, tkValue] = this.tokenizer.getNextToken();

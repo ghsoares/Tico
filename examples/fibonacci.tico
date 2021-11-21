@@ -1,0 +1,32 @@
+/*
+args:
+	count: number of numbers in fibonacci sequence
+*/
+
+func fibonacci start
+	dup 1 >
+	if start
+		dup 1 - fibonacci call
+		rev 2 - fibonacci call
+		+
+	end
+end
+
+"Computing " count get + " numbers of fibonacci sequence:\n\n" + dump
+
+count get
+0
+
+loop start
+	dup 2 over > if break
+
+	dup 0 > if start ", " dump end
+	dup fibonacci call dump
+
+	1 +
+end
+
+drop
+drop
+
+"\n" dump

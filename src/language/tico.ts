@@ -1,7 +1,7 @@
 import Parser from "./parser";
 
 let iotaState = 0;
-function IOTA(reset = false) {
+function iota(reset = false) {
 	if (reset) {
 		let prev = iotaState;
 		iotaState = 0;
@@ -13,42 +13,43 @@ function IOTA(reset = false) {
 export type Command = [number, any, number, number];
 
 export const CommandEnum = {
-	OP_PUSH: IOTA(),
+	OP_PUSH: iota(),
 	// Operations
-	OP_DUMP: IOTA(),
-	OP_STCK: IOTA(),
-	OP_DROP: IOTA(),
-	OP_DUPL: IOTA(),
-	OP_REV: IOTA(),
-	OP_FUNC: IOTA(),
-	OP_LOOP: IOTA(),
-	OP_BREK: IOTA(),
-	OP_CALL: IOTA(),
-	OP_SET: IOTA(),
-	OP_GET: IOTA(),
-	OP_IF: IOTA(),
-	OP_STR: IOTA(),
-	OP_LEN: IOTA(),
+	OP_DUMP: iota(),
+	OP_STCK: iota(),
+	OP_DROP: iota(),
+	OP_DUPL: iota(),
+	OP_OVER: iota(),
+	OP_REV: iota(),
+	OP_FUNC: iota(),
+	OP_LOOP: iota(),
+	OP_BREK: iota(),
+	OP_CALL: iota(),
+	OP_SET: iota(),
+	OP_GET: iota(),
+	OP_IF: iota(),
+	OP_STR: iota(),
+	OP_LEN: iota(),
 	// Binary operations
-	OP_ADD: IOTA(),
-	OP_SUB: IOTA(),
-	OP_MLT: IOTA(),
-	OP_DIV: IOTA(),
-	OP_MOD: IOTA(),
+	OP_ADD: iota(),
+	OP_SUB: iota(),
+	OP_MLT: iota(),
+	OP_DIV: iota(),
+	OP_MOD: iota(),
 	// Binary comparison operations
-	BOP_GT: IOTA(),
-	BOP_LT: IOTA(),
-	BOP_GTE: IOTA(),
-	BOP_LTE: IOTA(),
-	BOP_EQ: IOTA(),
-	BOP_NEQ: IOTA(),
-	BOP_NOT: IOTA(),
-	BOP_AND: IOTA(),
-	BOP_OR: IOTA(),
+	BOP_GT: iota(),
+	BOP_LT: iota(),
+	BOP_GTE: iota(),
+	BOP_LTE: iota(),
+	BOP_EQ: iota(),
+	BOP_NEQ: iota(),
+	BOP_NOT: iota(),
+	BOP_AND: iota(),
+	BOP_OR: iota(),
 
-	IDFR: IOTA(),
+	IDFR: iota(),
 
-	MAX: IOTA(true)
+	MAX: iota(true)
 }
 
 type StdOut = (...args: any[]) => void;
@@ -83,9 +84,6 @@ class ProgramScope {
 		let func = this.functions[name];
 		if (func === undefined && this.parent) {
 			func = this.parent.getFunction(name);
-		}
-		if (func === undefined) {
-			func = this.program.getFunction(name);
 		}
 		return func;
 	}
@@ -126,6 +124,14 @@ class ProgramScope {
 		if (this.stack.length < 1) throw new Error(`There is nothing to duplicate on stack`);
 		const v = this.stack.pop();
 		this.stack.push(v, v);
+	}
+
+	private op_over(commandArg: any): void {
+		if (this.stack.length < 1) throw new Error(`There is nothing to duplicate on stack`);
+		const steps = this.stack.pop();
+		if (typeof steps !== 'number') throw new Error(`Over steps must be a number`);
+		if (steps >= this.stack.length || steps < 0) throw new RangeError(`Over index overflow`);
+		this.stack.push(this.stack[this.stack.length - (steps + 1)]);
 	}
 
 	private op_rev(commandArg: any): void {
@@ -185,8 +191,13 @@ class ProgramScope {
 		if (this.stack.length < 1) throw new Error(`There is no identifier on stack`);
 		const id = this.stack.pop();
 		const func = this.getFunction(id);
-		if (func === undefined) throw new Error(`There is no function called "${id}"`);
-		func.run();
+		if (func === undefined) {
+			const jsFunc = this.program.getFunction(id);
+			if (jsFunc === undefined) throw new Error(`There is no function called "${id}"`);
+			jsFunc();
+		} else {
+			func.run();
+		}
 	}
 
 	private op_set(commandArg: any): void {
@@ -267,54 +278,54 @@ class ProgramScope {
 	private bop_gt(commandArg: any): void {
 		if (this.stack.length < 2) throw new Error(`Operation requires two data on stack`);
 		const [right, left] = [this.stack.pop(), this.stack.pop()];
-		this.stack.push(left > right);
+		this.stack.push(left > right ? 1 : 0);
 	}
 
 	private bop_lt(commandArg: any): void {
 		if (this.stack.length < 2) throw new Error(`Operation requires two data on stack`);
 		const [right, left] = [this.stack.pop(), this.stack.pop()];
-		this.stack.push(left < right);
+		this.stack.push(left < right ? 1 : 0);
 	}
 
 	private bop_gte(commandArg: any): void {
 		if (this.stack.length < 2) throw new Error(`Operation requires two data on stack`);
 		const [right, left] = [this.stack.pop(), this.stack.pop()];
-		this.stack.push(left >= right);
+		this.stack.push(left >= right ? 1 : 0);
 	}
 
 	private bop_lte(commandArg: any): void {
 		if (this.stack.length < 2) throw new Error(`Operation requires two data on stack`);
 		const [right, left] = [this.stack.pop(), this.stack.pop()];
-		this.stack.push(left <= right);
+		this.stack.push(left <= right ? 1 : 0);
 	}
 
 	private bop_eq(commandArg: any): void {
 		if (this.stack.length < 2) throw new Error(`Operation requires two data on stack`);
 		const [right, left] = [this.stack.pop(), this.stack.pop()];
-		this.stack.push(left == right);
+		this.stack.push(left == right ? 1 : 0);
 	}
 
 	private bop_neq(commandArg: any): void {
 		if (this.stack.length < 2) throw new Error(`Operation requires two data on stack`);
 		const [right, left] = [this.stack.pop(), this.stack.pop()];
-		this.stack.push(left != right);
+		this.stack.push(left != right ? 1 : 0);
 	}
 
 	private bop_not(commandArg: any): void {
 		if (this.stack.length < 1) throw new Error(`There is no boolean on stack`);
-		this.stack.push(!this.stack.pop());
+		this.stack.push(~this.stack.pop());
 	}
 
 	private bop_and(commandArg: any): void {
 		if (this.stack.length < 2) throw new Error(`Operation requires two data on stack`);
 		const [right, left] = [this.stack.pop(), this.stack.pop()];
-		this.stack.push(left && right);
+		this.stack.push(left & right);
 	}
 
 	private bop_or(commandArg: any): void {
 		if (this.stack.length < 2) throw new Error(`Operation requires two data on stack`);
 		const [right, left] = [this.stack.pop(), this.stack.pop()];
-		this.stack.push(left || right);
+		this.stack.push(left | right);
 	}
 
 	private idfr(id: string): void {
@@ -324,7 +335,9 @@ class ProgramScope {
 	public run() {
 		this.functions = {};
 		this.variables = [];
+		this.isBreaked = false;
 		for (const command of this.commands) {
+			if (this.isBreaked) break;
 			this.program.currentCommand = command;
 			const [commandType, commandArg] = command;
 			switch (commandType) {
@@ -334,6 +347,7 @@ class ProgramScope {
 				case CommandEnum.OP_DUMP: this.op_dump(commandArg); break;
 				case CommandEnum.OP_STCK: this.op_stck(commandArg); break;
 				case CommandEnum.OP_DUPL: this.op_dupl(commandArg); break;
+				case CommandEnum.OP_OVER: this.op_over(commandArg); break;
 				case CommandEnum.OP_REV: this.op_rev(commandArg); break;
 				case CommandEnum.OP_FUNC: this.op_func(commandArg); break;
 				case CommandEnum.OP_LOOP: this.op_loop(commandArg); break;
@@ -377,7 +391,7 @@ class ProgramScope {
 export default class TicoProgram {
 	public stack: any[];
 	public currentCommand: Command;
-	public functions: { [key: string]: ProgramScope };
+	public functions: { [key: string]: () => void };
 	public variables: { [key: string]: any };
 
 	public performance: Performance;
@@ -398,7 +412,7 @@ export default class TicoProgram {
 		this.stderr = stderr;
 	}
 
-	public getFunction(name: string): ProgramScope {
+	public getFunction(name: string): () => void {
 		return this.functions[name];
 	}
 
@@ -425,13 +439,13 @@ export default class TicoProgram {
 		else console.error(msg);
 	}
 
-	public run(variables: { [key: string]: any } = {}): void {
+	public async run(variables: { [key: string]: any } = {}, functions: {[key: string]: () => void} = {}): Promise<void> {
 		this.stack = [];
 		this.mainScope = new ProgramScope(
 			this.stack, this, null, this.commands
 		);
 		this.variables = variables;
-		this.functions = {};
+		this.functions = functions;
 		this.performance = { peakMem: 0 };
 		this.currentCommand = null;
 		try {
