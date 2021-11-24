@@ -11,6 +11,7 @@ export default class Tokenizer {
 	public constructor() {
 		this.tokenDefs = [];
 		this.source = "";
+		this.sourceLength = 0;
 		this.cursor = 0;
 	}
 
@@ -26,6 +27,10 @@ export default class Tokenizer {
 
 	public EOF(): boolean {
 		return this.cursor >= this.sourceLength;
+	}
+
+	public getCursorPos(): number {
+		return this.cursor;
 	}
 
 	public getCursorInfo(): [number, number] {
@@ -54,10 +59,9 @@ export default class Tokenizer {
 
 		for (const [tokenName, tokenRegex] of this.tokenDefs) {
 			const matched = tokenRegex.exec(str);
-			const [line, column] = this.getCursorInfo();
 			if (matched) {
 				if (matched.index === 0) {
-					const newToken: Token = [tokenName, matched, line, column];
+					const newToken: Token = [tokenName, matched, this.cursor, this.cursor + matched[0].length];
 					if (tk === null || newToken[1][0].length > tk[1][0].length) {
 						tk = newToken;
 						tkName = tokenName;
@@ -72,11 +76,36 @@ export default class Tokenizer {
 				tk = this.getNextToken();
 			}
 		}
+		if (tk === null) {
+			if (!this.EOF()) {
+				let tkGet = (/^\w+/).exec(str);
+				if (tkGet === null) {
+					tkGet = (/^[-!$%^&*()_+|~=`{}[\]:";'<>?,./]/).exec(str);
+				}
+				if (tkGet === null) {
+					tkGet = (/^./).exec(str);
+				}
+				tk = [
+					-1,
+					tkGet,
+					this.cursor,
+					this.cursor + tkGet[0].length
+				];
+				this.cursor += tkGet[0].length;
+			} else {
+				tk = [-2, null, this.cursor, this.cursor];
+			}
+		}
+		
 
 		return tk;
 	}
 
 	public goBack(steps: number): void {
 		this.cursor -= steps;
+	}
+
+	public goTo(pos: number): void {
+		this.cursor = pos;
 	}
 }

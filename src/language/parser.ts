@@ -1,221 +1,378 @@
+/* eslint-disable no-lone-blocks */
 import { Command, CommandEnum } from "./tico";
-import Tokenizer from "./tokenizer";
-
-let iotaState = 0;
-function iota(reset = false) {
-	if (reset) {
-		let prev = iotaState;
-		iotaState = 0;
-		return prev;
-	}
-	return iotaState++;
-}
-
-const TokenEnum = {
-	// Literals
-	LT_BIGINT: iota(),
-	LT_NUMBER: iota(),
-	LT_STRING: iota(),
-	// Operations
-	OP_DUMP: iota(),
-	OP_DROP: iota(),
-	OP_STCK: iota(),
-	OP_DUPL: iota(),
-	OP_OVER: iota(),
-	OP_REV: iota(),
-	OP_FUNC: iota(),
-	OP_CALL: iota(),
-	OP_LOOP: iota(),
-	OP_BREK: iota(),
-	OP_STRT: iota(),
-	OP_END: iota(),
-	OP_SET: iota(),
-	OP_GET: iota(),
-	OP_IF: iota(),
-	OP_STR: iota(),
-	OP_LEN: iota(),
-	// Binary operations
-	OP_ADD: iota(),
-	OP_SUB: iota(),
-	OP_MLT: iota(),
-	OP_DIV: iota(),
-	OP_MOD: iota(),
-	// Binary comparison operations
-	BOP_GT: iota(),
-	BOP_LT: iota(),
-	BOP_GTE: iota(),
-	BOP_LTE: iota(),
-	BOP_EQ: iota(),
-	BOP_NEQ: iota(),
-	BOP_NOT: iota(),
-	BOP_AND: iota(),
-	BOP_OR: iota(),
-
-	IDFR: iota(),
-
-	MAX: iota(true)
-}
+import TicoTokenizer, { TokenEnum } from "./ticoTokenizer";
 
 export default class Parser {
-	private tokenizer: Tokenizer;
+	private tokenizer: TicoTokenizer;
 
 	public constructor() {
-		this.tokenizer = new Tokenizer();
-
-		this.tokenizer.addTokenDefinition([null, /(\/\*)(.|\n|\r)*?(\*\/)/]);
-		this.tokenizer.addTokenDefinition([null, /\/\/.*/]);
-		this.tokenizer.addTokenDefinition([null, /\s+|\n+|\r+/]);
-
-		for (let i = 0; i < TokenEnum.MAX; i++) {
-			this.getTokenRegex(i).forEach(reg => this.tokenizer.addTokenDefinition([i, reg]));
-		}
-	}
-
-	private getTokenRegex(tk: number): RegExp[] {
-		switch (tk) {
-			// Literals
-			case TokenEnum.LT_BIGINT: return [/\d+n/];
-			case TokenEnum.LT_NUMBER: return [/\d+/];
-			case TokenEnum.LT_STRING: return [/".*?"/, /'.*?'/];
-			// Operations
-			case TokenEnum.OP_DUMP: return [/dump/i];
-			case TokenEnum.OP_DROP: return [/drop/i];
-			case TokenEnum.OP_STCK: return [/stack/i];
-			case TokenEnum.OP_DUPL: return [/dup/i];
-			case TokenEnum.OP_OVER: return [/over/i];
-			case TokenEnum.OP_REV: return [/rev/i];
-			case TokenEnum.OP_FUNC: return [/func/i];
-			case TokenEnum.OP_CALL: return [/call/i];
-			case TokenEnum.OP_LOOP: return [/loop/i];
-			case TokenEnum.OP_BREK: return [/break/i];
-			case TokenEnum.OP_STRT: return [/start/i];
-			case TokenEnum.OP_END: return [/end/i];
-			case TokenEnum.OP_SET: return [/set/i];
-			case TokenEnum.OP_GET: return [/get/i];
-			case TokenEnum.OP_IF: return [/if/i];
-			case TokenEnum.OP_STR: return [/str/i];
-			case TokenEnum.OP_LEN: return [/len/i];
-			// Binary operations
-			case TokenEnum.OP_ADD: return [/\+/];
-			case TokenEnum.OP_SUB: return [/\-/];
-			case TokenEnum.OP_MLT: return [/\*/];
-			case TokenEnum.OP_DIV: return [/\//];
-			case TokenEnum.OP_MOD: return [/%/];
-			// Binary comparison operations
-			case TokenEnum.BOP_GT: return [/\>/];
-			case TokenEnum.BOP_LT: return [/\</];
-			case TokenEnum.BOP_GTE: return [/\>=/];
-			case TokenEnum.BOP_LTE: return [/\<=/];
-			case TokenEnum.BOP_EQ: return [/==/];
-			case TokenEnum.BOP_NEQ: return [/!=/];
-			case TokenEnum.BOP_NOT: return [/not/i];
-			case TokenEnum.BOP_AND: return [/and/i];
-			case TokenEnum.BOP_OR: return [/or/i];
-
-			case TokenEnum.IDFR: return [/[a-zA-Z_$][\w]*/];
-
-			default: throw new Error(`Not implemented`);
-		}
+		this.tokenizer = new TicoTokenizer();
 	}
 
 	private _parse(insideScope: boolean = false, parseOnce: boolean = false): Command[] {
 		const commands: Command[] = [];
 		let ended = false;
 
+		const cursorStart = this.tokenizer.getCursorPos();
+
 		while (!this.tokenizer.EOF()) {
-			const tk = this.tokenizer.getNextToken();
-			if (tk === null) {
-				if (this.tokenizer.EOF()) break;
-				this.tokenizer.throwError(`Unexpected token`);
-			}
-			let [tkType, tkValue, tkLine, tkColumn] = tk;
+			const [tkType, tkValue, tkStart, tkEnd] = this.tokenizer.getNextToken();
+			if (tkType === -2) break;
+			if (tkType === -1) this.tokenizer.throwError(`Unexpected token ${tkValue[0]}`);
 
 			switch (tkType) {
 				// Literals
-				case TokenEnum.LT_NUMBER: commands.push([CommandEnum.OP_PUSH, Number(tkValue), tkLine, tkColumn]); break;
-				case TokenEnum.LT_BIGINT: commands.push([CommandEnum.OP_PUSH, BigInt(tkValue[0].slice(0, tkValue[0].length - 1)), tkLine, tkColumn]); break;
+				case TokenEnum.LT_NUMBER: {
+					commands.push([
+						CommandEnum.STK_PUSH,
+						['number', Number(tkValue)],
+						tkStart, tkEnd
+					]);
+				} break;
+				case TokenEnum.LT_BIGINT: {
+					commands.push([
+						CommandEnum.STK_PUSH,
+						['bigint', BigInt(tkValue[0].slice(0, tkValue[0].length - 1))],
+						tkStart, tkEnd
+					]);
+				} break;
 				case TokenEnum.LT_STRING: {
 					let str = tkValue[0].slice(1, tkValue[0].length - 1);
 					str = str
 							.replace(/\\n/g, "\n")
 							.replace(/\\r/g, "\r")
-							.replace(/\\t/g, "\t");
-					commands.push([CommandEnum.OP_PUSH, str, tkLine, tkColumn]);
+							.replace(/\\t/g, "\t")
+							.replace(/\\x1B/g, "\x1B");
+					commands.push([
+						CommandEnum.STK_PUSH,
+						['string', str], tkStart, tkEnd
+					]);
 				} break;
-				// Operations
-				case TokenEnum.OP_DUMP: commands.push([CommandEnum.OP_DUMP, null, tkLine, tkColumn]); break;
-				case TokenEnum.OP_DROP: commands.push([CommandEnum.OP_DROP, null, tkLine, tkColumn]); break;
-				case TokenEnum.OP_STCK: commands.push([CommandEnum.OP_STCK, null, tkLine, tkColumn]); break;
-				case TokenEnum.OP_DUPL: commands.push([CommandEnum.OP_DUPL, null, tkLine, tkColumn]); break;
-				case TokenEnum.OP_OVER: commands.push([CommandEnum.OP_OVER, null, tkLine, tkColumn]); break;
-				case TokenEnum.OP_REV: commands.push([CommandEnum.OP_REV, null, tkLine, tkColumn]); break;
-				case TokenEnum.OP_FUNC: {
-					[tkType, tkValue] = this.tokenizer.getNextToken();
-					if (tkType !== TokenEnum.IDFR) this.tokenizer.throwError(`Expected function identifier`);
-					const funcName = tkValue[0].toLowerCase();
-
-					[tkType, tkValue] = this.tokenizer.getNextToken();
-					if (tkType !== TokenEnum.OP_STRT) this.tokenizer.throwError(`Expected "start" keyword`);
-					const funcCommands = this._parse(true);
-
-					commands.push([CommandEnum.OP_FUNC, [funcName, funcCommands], tkLine, tkColumn]);
+				
+				// Stack operations
+				case TokenEnum.STK_GOTO: {
+					commands.push([
+						CommandEnum.STK_GOTO,
+						null,
+						tkStart, tkEnd
+					]);
 				} break;
-				case TokenEnum.OP_LOOP: {
-					[tkType, tkValue] = this.tokenizer.getNextToken();
-					if (tkType !== TokenEnum.OP_STRT) this.tokenizer.throwError(`Expected "start" keyword`);
-					const funcCommands = this._parse(true);
-
-
-					commands.push([CommandEnum.OP_LOOP, funcCommands, tkLine, tkColumn]);
+				case TokenEnum.STK_MOVL: {
+					commands.push([
+						CommandEnum.STK_MOVL,
+						null,
+						tkStart, tkEnd
+					]);
 				} break;
-				case TokenEnum.OP_BREK: commands.push([CommandEnum.OP_BREK, null, tkLine, tkColumn]); break;
-				case TokenEnum.OP_CALL: commands.push([CommandEnum.OP_CALL, null, tkLine, tkColumn]); break;
-				case TokenEnum.OP_STRT: this.tokenizer.throwError(`"start" keyword must be used to start a scope`);
-				case TokenEnum.OP_END: {
-					if (insideScope) ended = true;
-					else this.tokenizer.throwError(`"end" keyword must be used to end a scope`)
-				}; break;
-				case TokenEnum.OP_SET: commands.push([CommandEnum.OP_SET, null, tkLine, tkColumn]); break;
-				case TokenEnum.OP_GET: commands.push([CommandEnum.OP_GET, null, tkLine, tkColumn]); break;
-				case TokenEnum.OP_IF: {
-					[tkType, tkValue] = this.tokenizer.getNextToken();
-					if (tkType === TokenEnum.OP_STRT) {
+				case TokenEnum.STK_MOVR: {
+					commands.push([
+						CommandEnum.STK_MOVR,
+						null,
+						tkStart, tkEnd
+					]);
+				} break;
+				case TokenEnum.STK_DUP: {
+					commands.push([
+						CommandEnum.STK_DUP,
+						null,
+						tkStart, tkEnd
+					]);
+				} break;
+				case TokenEnum.STK_DUPA: {
+					commands.push([
+						CommandEnum.STK_DUPA,
+						null,
+						tkStart, tkEnd
+					]);
+				} break;
+				case TokenEnum.STK_DUPL: {
+					commands.push([
+						CommandEnum.STK_DUPL,
+						null,
+						tkStart, tkEnd
+					]);
+				} break;
+				case TokenEnum.STK_DUPR: {
+					commands.push([
+						CommandEnum.STK_DUPR,
+						null,
+						tkStart, tkEnd
+					]);
+				} break;
+				case TokenEnum.STK_DUMP: {
+					commands.push([
+						CommandEnum.STK_DUMP,
+						null,
+						tkStart, tkEnd
+					]);
+				} break;
+				case TokenEnum.STK_DROP: {
+					commands.push([
+						CommandEnum.STK_DROP,
+						null,
+						tkStart, tkEnd
+					]);
+				} break;
+				case TokenEnum.STK_GET: {
+					commands.push([
+						CommandEnum.STK_GET,
+						null,
+						tkStart, tkEnd
+					]);
+				} break;
+				case TokenEnum.STK_SET: {
+					commands.push([
+						CommandEnum.STK_SET,
+						null,
+						tkStart, tkEnd
+					]);
+				} break;
+				case TokenEnum.STK_TOP : {
+					commands.push([
+						CommandEnum.STK_TOP ,
+						null,
+						tkStart, tkEnd
+					]);
+				} break;
+				case TokenEnum.STK_STCK: {
+					commands.push([
+						CommandEnum.STK_STCK,
+						null,
+						tkStart, tkEnd
+					]);
+				} break;
+				
+				// Arithmetic operations
+				case TokenEnum.ART_ADD: {
+					commands.push([
+						CommandEnum.ART_ADD,
+						null,
+						tkStart, tkEnd
+					]);
+				} break;
+				case TokenEnum.ART_SUB: {
+					commands.push([
+						CommandEnum.ART_SUB,
+						null,
+						tkStart, tkEnd
+					]);
+				} break;
+				case TokenEnum.ART_MLT: {
+					commands.push([
+						CommandEnum.ART_MLT,
+						null,
+						tkStart, tkEnd
+					]);
+				} break;
+				case TokenEnum.ART_DIV: {
+					commands.push([
+						CommandEnum.ART_DIV,
+						null,
+						tkStart, tkEnd
+					]);
+				} break;
+				case TokenEnum.ART_MOD: {
+					commands.push([
+						CommandEnum.ART_MOD,
+						null,
+						tkStart, tkEnd
+					]);
+				} break;
+
+				// Mathematical operations
+				case TokenEnum.MTH_MOD: {
+					commands.push([
+						CommandEnum.MTH_MOD,
+						null,
+						tkStart, tkEnd
+					]);
+				} break;
+
+				// Bitwise operations
+				case TokenEnum.BTW_AND: {
+					commands.push([
+						CommandEnum.BTW_AND,
+						null,
+						tkStart, tkEnd
+					]);
+				} break;
+				case TokenEnum.BTW_OR: {
+					commands.push([
+						CommandEnum.BTW_OR,
+						null,
+						tkStart, tkEnd
+					]);
+				} break;
+				case TokenEnum.BTW_XOR: {
+					commands.push([
+						CommandEnum.BTW_XOR,
+						null,
+						tkStart, tkEnd
+					]);
+				} break;
+				case TokenEnum.BTW_NOT: {
+					commands.push([
+						CommandEnum.BTW_NOT,
+						null,
+						tkStart, tkEnd
+					]);
+				} break;
+				case TokenEnum.BTW_SHL: {
+					commands.push([
+						CommandEnum.BTW_SHL,
+						null,
+						tkStart, tkEnd
+					]);
+				} break;
+				case TokenEnum.BTW_SHR: {
+					commands.push([
+						CommandEnum.BTW_SHR,
+						null,
+						tkStart, tkEnd
+					]);
+				} break;
+
+				// Comparison operations
+				case TokenEnum.CMP_EQ: {
+					commands.push([
+						CommandEnum.CMP_EQ,
+						null,
+						tkStart, tkEnd
+					]);
+				} break;
+				case TokenEnum.CMP_NEQ: {
+					commands.push([
+						CommandEnum.CMP_NEQ,
+						null,
+						tkStart, tkEnd
+					]);
+				} break;
+				case TokenEnum.CMP_GT: {
+					commands.push([
+						CommandEnum.CMP_GT,
+						null,
+						tkStart, tkEnd
+					]);
+				} break;
+				case TokenEnum.CMP_LT: {
+					commands.push([
+						CommandEnum.CMP_LT,
+						null,
+						tkStart, tkEnd
+					]);
+				} break;
+				case TokenEnum.CMP_GTE: {
+					commands.push([
+						CommandEnum.CMP_GTE,
+						null,
+						tkStart, tkEnd
+					]);
+				} break;
+				case TokenEnum.CMP_LTE: {
+					commands.push([
+						CommandEnum.CMP_LTE,
+						null,
+						tkStart, tkEnd
+					]);
+				} break;
+				case TokenEnum.CMP_NOT: {
+					commands.push([
+						CommandEnum.CMP_NOT,
+						null,
+						tkStart, tkEnd
+					]);
+				} break;
+
+				// Scope operations
+				case TokenEnum.SCP_IF: {
+					let [tkType1, tkValue1] = this.tokenizer.getNextToken();
+					if (tkType1 === TokenEnum.SCP_STRT) {
 						const ifCommands = this._parse(true);
-						commands.push([CommandEnum.OP_IF, ifCommands, tkLine, tkColumn]);
+						commands.push([
+							CommandEnum.SCP_IF,
+							ifCommands,
+							tkStart, tkEnd
+						]);
 					} else {
-						this.tokenizer.goBack(tkValue[0].length)
+						this.tokenizer.goBack(tkValue1[0].length);
 						const ifCommands = this._parse(false, true);
-						commands.push([CommandEnum.OP_IF, ifCommands, tkLine, tkColumn]);
+						commands.push([
+							CommandEnum.SCP_IF,
+							ifCommands,
+							tkStart, tkEnd
+						]);
 					}
 				} break;
-				case TokenEnum.OP_LEN: commands.push([CommandEnum.OP_LEN, null, tkLine, tkColumn]); break;
-				case TokenEnum.OP_STR: commands.push([CommandEnum.OP_STR, null, tkLine, tkColumn]); break;
-				// Binary operations
-				case TokenEnum.OP_ADD: commands.push([CommandEnum.OP_ADD, null, tkLine, tkColumn]); break;
-				case TokenEnum.OP_SUB: commands.push([CommandEnum.OP_SUB, null, tkLine, tkColumn]); break;
-				case TokenEnum.OP_MLT: commands.push([CommandEnum.OP_MLT, null, tkLine, tkColumn]); break;
-				case TokenEnum.OP_DIV: commands.push([CommandEnum.OP_DIV, null, tkLine, tkColumn]); break;
-				case TokenEnum.OP_MOD: commands.push([CommandEnum.OP_MOD, null, tkLine, tkColumn]); break;
-				// Binary comparison operations
-				case TokenEnum.BOP_GT: commands.push([CommandEnum.BOP_GT, null, tkLine, tkColumn]); break;
-				case TokenEnum.BOP_LT: commands.push([CommandEnum.BOP_LT, null, tkLine, tkColumn]); break;
-				case TokenEnum.BOP_GTE: commands.push([CommandEnum.BOP_GTE, null, tkLine, tkColumn]); break;
-				case TokenEnum.BOP_LTE: commands.push([CommandEnum.BOP_LTE, null, tkLine, tkColumn]); break;
-				case TokenEnum.BOP_EQ: commands.push([CommandEnum.BOP_EQ, null, tkLine, tkColumn]); break;
-				case TokenEnum.BOP_NEQ: commands.push([CommandEnum.BOP_NEQ, null, tkLine, tkColumn]); break;
-				case TokenEnum.BOP_NOT: commands.push([CommandEnum.BOP_NOT, null, tkLine, tkColumn]); break;
-				case TokenEnum.BOP_AND: commands.push([CommandEnum.BOP_AND, null, tkLine, tkColumn]); break;
-				case TokenEnum.BOP_OR: commands.push([CommandEnum.BOP_OR, null, tkLine, tkColumn]); break;
+				case TokenEnum.SCP_LOOP: {
+					let [tkType1] = this.tokenizer.getNextToken();
+					if (tkType1 !== TokenEnum.SCP_STRT) throw new Error(`Expected "start" keyword`);
 
-				case TokenEnum.IDFR: commands.push([CommandEnum.IDFR, tkValue[0].toLowerCase(), tkLine, tkColumn]); break;
+					const loopCommands = this._parse(true);
+					commands.push([
+						CommandEnum.SCP_LOOP,
+						loopCommands,
+						tkStart, tkEnd
+					]);
+				} break;
+				case TokenEnum.SCP_FUNC: {
+					let [tkType1, tkValue1] = this.tokenizer.getNextToken();
+					if (tkType1 !== TokenEnum.EXT_IDFR) throw new Error(`Expected function identifier`);
+					const identifier = tkValue1;
+
+					[tkType1, tkValue1] = this.tokenizer.getNextToken();
+					if (tkType1 !== TokenEnum.SCP_STRT) throw new Error(`Expected "start" keyword`);
+
+					const funcCommands = this._parse(true);
+					commands.push([
+						CommandEnum.SCP_FUNC,
+						[identifier, funcCommands],
+						tkStart, tkEnd
+					]);
+				} break;
+				case TokenEnum.SCP_STRT: {
+					throw new Error(`"start" keyword must be used to start scopes`);
+				};
+				case TokenEnum.SCP_END: {
+					if (insideScope) {
+						ended = true;
+					} else {
+						throw new Error(`"start" keyword must be used to end scopes`);
+					}
+				} break;
+
+				// Keywords
+				case TokenEnum.KEY_BREK: {
+					commands.push([
+						CommandEnum.KEY_BREK,
+						null,
+						tkStart, tkEnd
+					]);
+				} break;
+				case TokenEnum.KEY_CALL: {
+					commands.push([
+						CommandEnum.KEY_CALL,
+						null,
+						tkStart, tkEnd
+					]);
+				} break;
+
+				// Extra
+				case TokenEnum.EXT_IDFR: {
+					commands.push([
+						CommandEnum.STK_PUSH,
+						['identifier', tkValue],
+						tkStart, tkEnd
+					]);
+				} break;
 
 				default: throw new Error(`Not implemented`);
 			}
 
-			if (insideScope && ended || parseOnce) break;
+			if ((insideScope && ended) || parseOnce) break;
 		}
 
 		if (insideScope && !ended) {
+			this.tokenizer.goTo(cursorStart);
 			this.tokenizer.throwError(`Couldn't find end of scope`);
 		}
 

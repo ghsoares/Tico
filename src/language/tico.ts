@@ -1,3 +1,4 @@
+/* eslint-disable no-lone-blocks */
 import Parser from "./parser";
 
 let iotaState = 0;
@@ -13,462 +14,537 @@ function iota(reset = false) {
 export type Command = [number, any, number, number];
 
 export const CommandEnum = {
-	OP_PUSH: iota(),
-	// Operations
-	OP_DUMP: iota(),
-	OP_STCK: iota(),
-	OP_DROP: iota(),
-	OP_DUPL: iota(),
-	OP_OVER: iota(),
-	OP_REV: iota(),
-	OP_FUNC: iota(),
-	OP_LOOP: iota(),
-	OP_BREK: iota(),
-	OP_CALL: iota(),
-	OP_SET: iota(),
-	OP_GET: iota(),
-	OP_IF: iota(),
-	OP_STR: iota(),
-	OP_LEN: iota(),
-	// Binary operations
-	OP_ADD: iota(),
-	OP_SUB: iota(),
-	OP_MLT: iota(),
-	OP_DIV: iota(),
-	OP_MOD: iota(),
-	// Binary comparison operations
-	BOP_GT: iota(),
-	BOP_LT: iota(),
-	BOP_GTE: iota(),
-	BOP_LTE: iota(),
-	BOP_EQ: iota(),
-	BOP_NEQ: iota(),
-	BOP_NOT: iota(),
-	BOP_AND: iota(),
-	BOP_OR: iota(),
+	// Stack operations
+	STK_PUSH: iota(),
+	STK_GOTO: iota(),
+	STK_MOVL: iota(),
+	STK_MOVR: iota(),
+	STK_DUP: iota(),
+	STK_DUPA: iota(),
+	STK_DUPL: iota(),
+	STK_DUPR: iota(),
+	STK_DUMP: iota(),
+	STK_DROP: iota(),
+	STK_GET: iota(),
+	STK_SET: iota(),
+	STK_TOP: iota(),
+	STK_STCK: iota(),
 
-	IDFR: iota(),
+	// Arithmetic operations
+	ART_ADD: iota(),
+	ART_SUB: iota(),
+	ART_MLT: iota(),
+	ART_DIV: iota(),
+	ART_MOD: iota(),
+
+	// Mathematical operations
+	MTH_MOD: iota(),
+
+	// Bitwise operations
+	BTW_AND: iota(),
+	BTW_OR: iota(),
+	BTW_XOR: iota(),
+	BTW_NOT: iota(),
+	BTW_SHL: iota(),
+	BTW_SHR: iota(),
+
+	// Comparison operations
+	CMP_EQ: iota(),
+	CMP_NEQ: iota(),
+	CMP_GT: iota(),
+	CMP_LT: iota(),
+	CMP_GTE: iota(),
+	CMP_LTE: iota(),
+	CMP_NOT: iota(),
+
+	// Scope operations
+	SCP_IF: iota(),
+	SCP_ELSE: iota(),
+	SCP_ELIF: iota(),
+	SCP_LOOP: iota(),
+	SCP_FUNC: iota(),
+
+	// Keywords
+	KEY_BREK: iota(),
+	KEY_CALL: iota(),
 
 	MAX: iota(true)
 }
 
-type StdOut = (...args: any[]) => void;
-type StdErr = (...args: any[]) => void;
-type Performance = { peakMem: number };
+//type Performance = { peakMem: number };
+
+function waitFrame() {
+	return new Promise<void>((resolve) => {
+		setTimeout(resolve, 0);
+	})
+}
 
 class ProgramScope {
 	public isLoop: boolean;
-	public isBreaked: boolean;
+	public isStopped: boolean;
 	private functions: { [key: string]: ProgramScope };
 	private variables: { [key: string]: any };
-	private stack: any[];
 	private program: TicoProgram;
 	private parent: ProgramScope;
 	private commands: Command[];
 
 	constructor(
-		stack: any[],
 		program: TicoProgram,
 		parent: ProgramScope,
 		commands: Command[]
 	) {
-		this.stack = stack;
 		this.program = program;
 		this.parent = parent;
 		this.commands = commands;
 		this.isLoop = false;
-		this.isBreaked = false;
+		this.isStopped = false;
 	}
 
-	private getFunction(name: string): ProgramScope {
-		let func = this.functions[name];
-		if (func === undefined && this.parent) {
-			func = this.parent.getFunction(name);
-		}
-		return func;
-	}
-
-	private getVariable(name: string): any {
-		let val = this.variables[name];
-		if (val === undefined && this.parent) {
-			val = this.parent.getVariable(name);
-		}
-		if (val === undefined) {
-			val = this.program.getVariable(name);
-		}
-		return val;
-	}
-
-	private setVariable(name: string, value: any): boolean {
-		if (this.variables[name] !== undefined) {
-			this.variables[name] = value;
-			return true;
-		}
-		else if (this.parent) return this.parent.setVariable(name, value);
-		else this.program.setVariable(name, value);
-
+	public hasIdentifier(id: string): boolean {
+		if (this.functions[id]) return true;
+		if (this.variables[id]) return true;
+		if (this.parent) return this.parent.hasIdentifier(id);
 		return false;
 	}
 
-	// Operations
-	private op_push(what: any): void {
-		this.stack.push(what);
+	public getFunction(id: string): ProgramScope {
+		let func = this.functions[id];
+		if (func === undefined && this.parent)
+			func = this.parent.getFunction(id);
+		return func;
 	}
 
-	private op_drop(commandArg: any): void {
-		if (this.stack.length < 1) throw new Error(`There is nothing to drop on stack`);
-		this.stack.pop();
-	}
-
-	private op_dupl(commandArg: any): void {
-		if (this.stack.length < 1) throw new Error(`There is nothing to duplicate on stack`);
-		const v = this.stack.pop();
-		this.stack.push(v, v);
-	}
-
-	private op_over(commandArg: any): void {
-		if (this.stack.length < 1) throw new Error(`There is nothing to duplicate on stack`);
-		const steps = this.stack.pop();
-		if (typeof steps !== 'number') throw new Error(`Over steps must be a number`);
-		if (steps >= this.stack.length || steps < 0) throw new RangeError(`Over index overflow`);
-		this.stack.push(this.stack[this.stack.length - (steps + 1)]);
-	}
-
-	private op_rev(commandArg: any): void {
-		if (this.stack.length < 2) throw new Error(`Operation requires two data on stack`);
-		const [right, left] = [this.stack.pop(), this.stack.pop()];
-		this.stack.push(right, left);
-	}
-
-	private op_dump(commandArg: any): void {
-		if (this.stack.length < 1) throw new Error(`There is nothing to dump on stack`);
-		this.program.std_out(this.stack.pop());
-	}
-
-	private op_stck(commandArg: any): void {
-
-		this.program.std_out("\nStack: ");
-		this.program.std_out(this.stack);
-		this.program.std_out("\n");
-	}
-
-	private op_func([funcName, funcCommands]): void {
-		if (this.getFunction(funcName) !== undefined) throw new Error(`Function "${funcName}" is already declared`);
-		this.functions[funcName] = new ProgramScope(
-			this.stack,
-			this.program,
-			this,
-			funcCommands
-		);
-	}
-
-	private op_loop(lpCommands: Command[]): void {
-		const loop = new ProgramScope(
-			this.stack,
-			this.program,
-			this,
-			lpCommands
-		);
-		loop.isLoop = true;
-
-		while (true) {
-			loop.run();
-			if (loop.isBreaked) break;
-		}
-	}
-
-	private op_brek(commandArg: any): void {
-		if (this.isLoop) {
-			this.isBreaked = true;
-		} else if (this.parent) {
-			this.parent.op_brek(commandArg);
-		} else {
-			throw new Error(`"break" keyword must be used inside loops`);
-		}
-	}
-
-	private op_call(commandArg: any): void {
-		if (this.stack.length < 1) throw new Error(`There is no identifier on stack`);
-		const id = this.stack.pop();
-		const func = this.getFunction(id);
-		if (func === undefined) {
-			const jsFunc = this.program.getFunction(id);
-			if (jsFunc === undefined) throw new Error(`There is no function called "${id}"`);
-			jsFunc();
-		} else {
-			func.run();
-		}
-	}
-
-	private op_set(commandArg: any): void {
-		if (this.stack.length < 2) throw new Error(`Operation requires two data on stack`);
-		const [value, identifier] = [this.stack.pop(), this.stack.pop()];
-		if (!this.setVariable(identifier, value)) {
-			this.variables[identifier] = value;
-		}
-	}
-
-	private op_get(commandArg: any): void {
-		if (this.stack.length < 1) throw new Error(`There is no identifier on stack`);
-		const id = this.stack.pop();
-		const value = this.getVariable(id);
-		if (value === undefined) throw new Error(`There is no variable called "${id}"`);
-		this.stack.push(value);
-	}
-
-	private op_if(ifCommands: Command[]): void {
-		if (this.stack.length < 1) throw new Error(`There is no boolean on stack`);
-		const condition = this.stack.pop();
-		if (condition) {
-			const exec = new ProgramScope(
-				this.stack,
-				this.program,
-				this,
-				ifCommands
-			);
-			exec.run();
-		}
-	}
-
-	private op_str(commandArg: any): void {
-		if (this.stack.length < 1) throw new Error(`There is no string on stack`);
-		this.stack.push(String(this.stack.pop()));
-	}
-
-	private op_len(commandArg: any): void {
-		if (this.stack.length < 1) throw new Error(`There is no string on stack`);
-		const str = this.stack.pop();
-		if (typeof str === 'string') {
-			this.stack.push(str.length);
-		} else throw new Error(`"len" operation only works for strings`);
-	}
-
-	// Binary operations
-	private op_add(commandArg: any): void {
-		if (this.stack.length < 2) throw new Error(`Operation requires two data on stack`);
-		const [right, left] = [this.stack.pop(), this.stack.pop()];
-		this.stack.push(left + right);
-	}
-
-	private op_sub(commandArg: any): void {
-		if (this.stack.length < 2) throw new Error(`Operation requires two data on stack`);
-		const [right, left] = [this.stack.pop(), this.stack.pop()];
-		this.stack.push(left - right);
-	}
-
-	private op_mlt(commandArg: any): void {
-		if (this.stack.length < 2) throw new Error(`Operation requires two data on stack`);
-		const [right, left] = [this.stack.pop(), this.stack.pop()];
-		this.stack.push(left * right);
-	}
-
-	private op_div(commandArg: any): void {
-		if (this.stack.length < 2) throw new Error(`Operation requires two data on stack`);
-		const [right, left] = [this.stack.pop(), this.stack.pop()];
-		this.stack.push(left / right);
-	}
-
-	private op_mod(commandArg: any): void {
-		if (this.stack.length < 2) throw new Error(`Operation requires two data on stack`);
-		const [right, left] = [this.stack.pop(), this.stack.pop()];
-		this.stack.push(left % right);
-	}
-
-	// Binary comparison operations
-	private bop_gt(commandArg: any): void {
-		if (this.stack.length < 2) throw new Error(`Operation requires two data on stack`);
-		const [right, left] = [this.stack.pop(), this.stack.pop()];
-		this.stack.push(left > right ? 1 : 0);
-	}
-
-	private bop_lt(commandArg: any): void {
-		if (this.stack.length < 2) throw new Error(`Operation requires two data on stack`);
-		const [right, left] = [this.stack.pop(), this.stack.pop()];
-		this.stack.push(left < right ? 1 : 0);
-	}
-
-	private bop_gte(commandArg: any): void {
-		if (this.stack.length < 2) throw new Error(`Operation requires two data on stack`);
-		const [right, left] = [this.stack.pop(), this.stack.pop()];
-		this.stack.push(left >= right ? 1 : 0);
-	}
-
-	private bop_lte(commandArg: any): void {
-		if (this.stack.length < 2) throw new Error(`Operation requires two data on stack`);
-		const [right, left] = [this.stack.pop(), this.stack.pop()];
-		this.stack.push(left <= right ? 1 : 0);
-	}
-
-	private bop_eq(commandArg: any): void {
-		if (this.stack.length < 2) throw new Error(`Operation requires two data on stack`);
-		const [right, left] = [this.stack.pop(), this.stack.pop()];
-		this.stack.push(left == right ? 1 : 0);
-	}
-
-	private bop_neq(commandArg: any): void {
-		if (this.stack.length < 2) throw new Error(`Operation requires two data on stack`);
-		const [right, left] = [this.stack.pop(), this.stack.pop()];
-		this.stack.push(left != right ? 1 : 0);
-	}
-
-	private bop_not(commandArg: any): void {
-		if (this.stack.length < 1) throw new Error(`There is no boolean on stack`);
-		this.stack.push(~this.stack.pop());
-	}
-
-	private bop_and(commandArg: any): void {
-		if (this.stack.length < 2) throw new Error(`Operation requires two data on stack`);
-		const [right, left] = [this.stack.pop(), this.stack.pop()];
-		this.stack.push(left & right);
-	}
-
-	private bop_or(commandArg: any): void {
-		if (this.stack.length < 2) throw new Error(`Operation requires two data on stack`);
-		const [right, left] = [this.stack.pop(), this.stack.pop()];
-		this.stack.push(left | right);
-	}
-
-	private idfr(id: string): void {
-		this.stack.push(id);
-	}
-
-	public run() {
+	public run(): void {
 		this.functions = {};
-		this.variables = [];
-		this.isBreaked = false;
+		this.variables = {};
+		this.isStopped = false;
+
+		this.program.pushRunningScope(this);
+
 		for (const command of this.commands) {
-			if (this.isBreaked) break;
+			if (this.isStopped) break;
+
 			this.program.currentCommand = command;
+
+			if (this.isStopped) break;
+
 			const [commandType, commandArg] = command;
+
 			switch (commandType) {
-				case CommandEnum.OP_PUSH: this.op_push(commandArg); break;
-				// Operations
-				case CommandEnum.OP_DROP: this.op_drop(commandArg); break;
-				case CommandEnum.OP_DUMP: this.op_dump(commandArg); break;
-				case CommandEnum.OP_STCK: this.op_stck(commandArg); break;
-				case CommandEnum.OP_DUPL: this.op_dupl(commandArg); break;
-				case CommandEnum.OP_OVER: this.op_over(commandArg); break;
-				case CommandEnum.OP_REV: this.op_rev(commandArg); break;
-				case CommandEnum.OP_FUNC: this.op_func(commandArg); break;
-				case CommandEnum.OP_LOOP: this.op_loop(commandArg); break;
-				case CommandEnum.OP_BREK: this.op_brek(commandArg); break;
-				case CommandEnum.OP_CALL: this.op_call(commandArg); break;
-				case CommandEnum.OP_SET: this.op_set(commandArg); break;
-				case CommandEnum.OP_GET: this.op_get(commandArg); break;
-				case CommandEnum.OP_IF: this.op_if(commandArg); break;
-				case CommandEnum.OP_STR: this.op_str(commandArg); break;
-				case CommandEnum.OP_LEN: this.op_len(commandArg); break;
-				// Binary operations
-				case CommandEnum.OP_ADD: this.op_add(commandArg); break;
-				case CommandEnum.OP_SUB: this.op_sub(commandArg); break;
-				case CommandEnum.OP_MLT: this.op_mlt(commandArg); break;
-				case CommandEnum.OP_DIV: this.op_div(commandArg); break;
-				case CommandEnum.OP_MOD: this.op_mod(commandArg); break;
-				// Binary comparison operations
-				case CommandEnum.BOP_GT: this.bop_gt(commandArg); break;
-				case CommandEnum.BOP_LT: this.bop_lt(commandArg); break;
-				case CommandEnum.BOP_GTE: this.bop_gte(commandArg); break;
-				case CommandEnum.BOP_LTE: this.bop_lte(commandArg); break;
-				case CommandEnum.BOP_EQ: this.bop_eq(commandArg); break;
-				case CommandEnum.BOP_NEQ: this.bop_neq(commandArg); break;
-				case CommandEnum.BOP_NOT: this.bop_not(commandArg); break;
-				case CommandEnum.BOP_AND: this.bop_and(commandArg); break;
-				case CommandEnum.BOP_OR: this.bop_or(commandArg); break;
+				// Stack operations
+				case CommandEnum.STK_PUSH: {
+					this.program.push(commandArg[1], commandArg[0]);
+				} break;
+				case CommandEnum.STK_GOTO: {
+					this.program.expectCount(1);
+					this.program.goto(this.program.pop('number')[1]);
+				} break;
+				case CommandEnum.STK_MOVL: {
+					this.program.expectCount(1);
+					this.program.move(-this.program.pop('number')[1]);
+				} break;
+				case CommandEnum.STK_MOVR: {
+					this.program.expectCount(1);
+					this.program.move(this.program.pop('number')[1]);
+				} break;
+				case CommandEnum.STK_DUP: {
+					const v = this.program.pop();
+					this.program.push(v[1], v[0]);
+					this.program.push(v[1], v[0]);
+				} break;
+				case CommandEnum.STK_DUPA: {
+					this.program.expectCount(1);
+					const pos = this.program.pop('number')[1];
+					const v = this.program.getAt(pos);
+					this.program.push(v[1], v[0]);
+				} break;
+				case CommandEnum.STK_DUPL: {
+					this.program.expectCount(1);
+					const ofs = this.program.pop('number')[1];
+					const v = this.program.getAt(this.program.getStackCursor() - ofs);
+					this.program.push(v[1], v[0]);
+				} break;
+				case CommandEnum.STK_DUPR: {
+					this.program.expectCount(1);
+					const ofs = this.program.pop('number')[1];
+					const v = this.program.getAt(this.program.getStackCursor() + ofs);
+					this.program.push(v[1], v[0]);
+				} break;
+				case CommandEnum.STK_DUMP: {
+					this.program.expectCount(1, "There is nothing to dump on stack");
+					this.program.onStdOut(this.program.pop()[1]);
+				} break;
+				case CommandEnum.STK_DROP: {
+					this.program.expectCount(1, "There is nothing to drop on stack");
+					this.program.pop();
+				} break;
+				case CommandEnum.STK_GET: {
+					const v = this.program.pop();
+					this.program.writeBuffer = v;
+				} break;
+				case CommandEnum.STK_SET: {
+					if (this.program.writeBuffer === undefined)
+						throw new Error(`There is nothing on write buffer`);
+					this.program.push(this.program.writeBuffer[1], this.program.writeBuffer[0]);
+				} break;
+				case CommandEnum.STK_TOP: {
+					const stackSize = this.program.getStackSize() - 1;
+					this.program.push(stackSize, 'number');
+				} break;
+				case CommandEnum.STK_STCK: {
+					this.program.printStack();
+				} break;
 
-				case CommandEnum.IDFR: this.idfr(commandArg); break;
+				// Arithmetic operations
+				case CommandEnum.ART_ADD: {
+					this.program.expectCount(2, "Operation requires 2 data on stack");
+					const [right, left] = [this.program.pop()[1], this.program.pop()[1]];
+					this.program.push(left + right);
+				} break;
+				case CommandEnum.ART_SUB: {
+					this.program.expectCount(2, "Operation requires 2 data on stack");
+					const [right, left] = [this.program.pop()[1], this.program.pop()[1]];
+					this.program.push(left - right);
+				} break;
+				case CommandEnum.ART_MLT: {
+					this.program.expectCount(2, "Operation requires 2 data on stack");
+					const [right, left] = [this.program.pop(), this.program.pop()];
+					this.program.push(left[1] * right[1]);
+				} break;
+				case CommandEnum.ART_DIV: {
+					this.program.expectCount(2, "Operation requires 2 data on stack");
+					const [right, left] = [this.program.pop(), this.program.pop()];
+					this.program.push(left[1] / right[1]);
+				} break;
+				case CommandEnum.ART_MOD: {
+					this.program.expectCount(2, "Operation requires 2 data on stack");
+					const [right, left] = [this.program.pop(), this.program.pop()];
+					this.program.push(left[1] % right[1]);
+				} break;
 
-				default: throw new Error(`Not implemented`);
+				// Mathematical operations
+				case CommandEnum.MTH_MOD: {
+					this.program.expectCount(2, "Operation requires 2 data on stack");
+					const [right, left] = [this.program.pop(), this.program.pop()];
+					//((n % m) + m) % m;
+					this.program.push( ((left[1] % right[1]) + right[1]) % right[1]);
+				} break;
+
+				// Bitwise operations
+				case CommandEnum.BTW_AND: {
+					this.program.expectCount(2, "Operation requires 2 data on stack");
+					const [right, left] = [this.program.pop(), this.program.pop()];
+					this.program.push((left[1] & right[1]) >>> 0);
+				} break;
+				case CommandEnum.BTW_OR: {
+					this.program.expectCount(2, "Operation requires 2 data on stack");
+					const [right, left] = [this.program.pop(), this.program.pop()];
+					this.program.push((left[1] | right[1]) >>> 0);
+				} break;
+				case CommandEnum.BTW_XOR: {
+					this.program.expectCount(2, "Operation requires 2 data on stack");
+					const [right, left] = [this.program.pop(), this.program.pop()];
+					this.program.push((left[1] ^ right[1]) >>> 0);
+				} break;
+				case CommandEnum.BTW_NOT: {
+					this.program.expectCount(1, "Expected a number on stack");
+					this.program.push((~this.program.pop()[1]) >>> 0);
+				} break;
+				case CommandEnum.BTW_SHL: {
+					this.program.expectCount(2, "Operation requires 2 data on stack");
+					const [right, left] = [this.program.pop(), this.program.pop()];
+					this.program.push((left[1] << right[1]) >>> 0);
+				} break;
+				case CommandEnum.BTW_SHR: {
+					this.program.expectCount(2, "Operation requires 2 data on stack");
+					const [right, left] = [this.program.pop(), this.program.pop()];
+					this.program.push((left[1] >>> right[1]) >>> 0);
+				} break;
+
+				// Comparison operations
+				case CommandEnum.CMP_EQ: {
+					this.program.expectCount(2, "Operation requires 2 data on stack");
+					const [right, left] = [this.program.pop(), this.program.pop()];
+					this.program.push(left[1] === right[1] ? 1 : 0);
+				} break;
+				case CommandEnum.CMP_NEQ: {
+					this.program.expectCount(2, "Operation requires 2 data on stack");
+					const [right, left] = [this.program.pop(), this.program.pop()];
+					this.program.push(left[1] !== right[1] ? 1 : 0);
+				} break;
+				case CommandEnum.CMP_GT: {
+					this.program.expectCount(2, "Operation requires 2 data on stack");
+					const [right, left] = [this.program.pop(), this.program.pop()];
+					this.program.push(left[1] > right[1] ? 1 : 0);
+				} break;
+				case CommandEnum.CMP_LT: {
+					this.program.expectCount(2, "Operation requires 2 data on stack");
+					const [right, left] = [this.program.pop(), this.program.pop()];
+					this.program.push(left[1] < right[1] ? 1 : 0);
+				} break;
+				case CommandEnum.CMP_GTE: {
+					this.program.expectCount(2, "Operation requires 2 data on stack");
+					const [right, left] = [this.program.pop(), this.program.pop()];
+					this.program.push(left[1] >= right[1] ? 1 : 0);
+				} break;
+				case CommandEnum.CMP_LTE: {
+					this.program.expectCount(2, "Operation requires 2 data on stack");
+					const [right, left] = [this.program.pop(), this.program.pop()];
+					this.program.push(left[1] <= right[1] ? 1 : 0);
+				} break;
+				case CommandEnum.CMP_NOT: {
+					this.program.expectCount(1, "Expected a number on stack");
+					const v = this.program.pop();
+					this.program.push(v[1] ? 0 : 1);
+				} break;
+
+				// Scope operations
+				case CommandEnum.SCP_IF: {
+					this.program.expectCount(1);
+					const condition = this.program.pop('number')[1];
+					if (condition) {
+						const ifScope = new ProgramScope(
+							this.program, this, commandArg
+						);
+						ifScope.run();
+					}
+				} break;
+				case CommandEnum.SCP_LOOP: {
+					const loopScope = new ProgramScope(
+						this.program, this, commandArg
+					);
+					loopScope.isLoop = true;
+					while (true) {
+						loopScope.run();
+						if (loopScope.isStopped) break;
+					}
+				} break;
+				case CommandEnum.SCP_FUNC: {
+					const [funcName, funcCommands] = commandArg;
+					const funcScope = new ProgramScope(
+						this.program, this, funcCommands
+					);
+					if (this.hasIdentifier(funcName))
+						throw new Error(`Identifier "${funcName}" already exists`);
+					this.functions[funcName] = funcScope;
+				} break;
+
+				// Keywords
+				case CommandEnum.KEY_BREK: {
+					let p: ProgramScope = this;
+					p.isStopped = true;
+					while (true) {
+						if (p === null) {
+							throw new Error(`"break" command must be used inside loops only`);
+						}
+						if (p.isLoop) break;
+						else {
+							p = p.parent;
+							p.isStopped = true;
+						}
+					}
+				} break;
+				case CommandEnum.KEY_CALL: {
+					this.program.expectCount(1, "Expected function identifier");
+					const funcName = this.program.pop('identifier')[1];
+					const func = this.getFunction(funcName);
+					if (func === undefined)
+						throw new Error(`There is no function declared "${funcName}"`);
+					func.run();
+				} break;
+
+				default: throw new Error(`Not implemented`)
 			}
-			const usedMem = process.memoryUsage().heapUsed;
-			this.program.performance.peakMem = Math.max(
-				this.program.performance.peakMem,
-				usedMem
-			);
 		}
+
+		this.program.popRunningScope();
 	}
 }
 
 export default class TicoProgram {
-	public stack: any[];
+	public onStdOut: (...args: any[]) => void;
+	public onStdErr: (...args: any[]) => void;
+	/*public onStackChanged: (stack: [string, any][]) => void;
+	public onStackCursorChanged: (cursorPos: number) => void;
+	public onCurrentCommandChanged: (cmd: Command) => void;
+	public onPaused: () => void;*/
 	public currentCommand: Command;
-	public functions: { [key: string]: () => void };
-	public variables: { [key: string]: any };
-
-	public performance: Performance;
-
+	public writeBuffer: [string, any];
+	/*public waitTimerStart: number;
+	public paused: boolean;
+	public pauseEveryCommand: boolean;*/
+	/*private stackChanged: boolean;
+	private stackCursorChanged: boolean;*/
 	private mainScope: ProgramScope;
+	private stack: [string, any][];
+	private stackCursor: number;
+	private stackSize: number;
 	private commands: Command[];
-	private stdout: StdOut;
-	private stderr: StdErr;
+	private running: boolean;
+	private stopping: boolean;
+	private runningScopes: ProgramScope[];
 
 	public constructor(
-		commands: Command[],
-		stdout: StdOut = null,
-		stderr: StdErr = null
+		commands: Command[]
 	) {
 		this.commands = commands;
 		this.stack = [];
-		this.stdout = stdout;
-		this.stderr = stderr;
+		this.onStdOut = (...args) => { console.log(args) };
+		this.onStdErr = (...args) => { console.error(args) };
+		/*this.onStackChanged = (_) => { };
+		this.onStackCursorChanged = (_) => { };
+		this.onCurrentCommandChanged = (_) => { };
+		this.onPaused = () => { };*/
+		this.running = false;
+		this.stopping = false;
+		/*this.stopping = false;
+		this.paused = false;
+		this.pauseEveryCommand = false;*/
 	}
 
-	public getFunction(name: string): () => void {
-		return this.functions[name];
+	private _push(idx: number, item: [string, any]): void {
+		this.stack.splice(idx, 0, item);
+		this.stackSize++;
 	}
 
-	public getVariable(name: string): any {
-		return this.variables[name];
+	private _pop(idx: number): [string, any] {
+		const v = this.stack.splice(idx, 1)[0];
+		this.stackSize--;
+		return v;
 	}
 
-	public setVariable(name: string, value: any): boolean {
-		if (this.variables[name] !== undefined) {
-			this.variables[name] = value;
-			return true;
+	public getStackSize(): number { return this.stackSize; }
+
+	public getStackCursor(): number { return this.stackCursor; }
+
+	public getAt(pos: number): [string, any] {
+		if (pos < 0 || pos >= this.stackSize)
+			throw new RangeError(`Out of bounds`);
+		return this.stack[pos];
+	}
+
+	public expectCount(count: number, msg: string = ""): void {
+		if (this.stackCursor + 1 < count)
+			throw new Error(`Command expected ${count} data on stack`);
+	}
+
+	public push(item: any, type: string = ""): void {
+		if (type === "") type = typeof item;
+
+		this._push(this.stackCursor + 1, [type, item]);
+		this.stackCursor++;
+		/*this.stackChanged = true;
+		this.stackCursorChanged = true;*/
+	}
+
+	public pop(type: string = ""): [string, any] {
+		const v = this._pop(this.stackCursor);
+		this.stackCursor--;
+
+		if (type !== "" && v[0] !== type) throw new Error(`Expected type "${type}"`);
+		/*this.stackChanged = true;
+		this.stackCursorChanged = true;*/
+		return v;
+	}
+
+	public goto(pos: number): void {
+		if (pos < 0 || pos >= this.stackSize)
+			throw new RangeError(`Out of bounds`);
+		this.stackCursor = pos;
+		//this.stackCursorChanged = true;
+	}
+
+	public move(steps: number): void {
+		this.stackCursor += steps;
+		if (this.stackCursor < 0 || this.stackCursor >= this.stackSize)
+			throw new RangeError(`Stack cursor out of bounds`);
+		//this.stackCursorChanged = true;
+	}
+
+	public printStack(): void {
+		if (this.stackSize === 0) {
+			this.onStdOut("\nEmpty stack\n");
+			return;
 		}
+		this.onStdOut(`\nStack (cursor at ${this.stackCursor}):\n`);
+		let cs = "";
+		this.onStdOut(this.stack.map(val => val[1]).join(", "));
 
-		return false;
+		for (let i = 0; i < this.stackCursor && i < this.stackSize; i++) {
+			cs += " ".repeat(("" + this.stack[i][1]).length);
+			cs += "  ";
+		}
+		this.onStdOut("\n" + cs + "^");
+
+		this.onStdOut("\n");
 	}
 
-	public std_out(msg: any): void {
-		if (this.stdout) this.stdout(msg);
-		else console.log(msg);
+	public pushRunningScope(scope: ProgramScope): void {
+		this.runningScopes.push(scope);
 	}
 
-	public std_err(msg: any): void {
-		if (this.stderr) this.stderr(msg);
-		else console.error(msg);
+	public popRunningScope(): void {
+		this.runningScopes.pop();
 	}
 
-	public async run(variables: { [key: string]: any } = {}, functions: {[key: string]: () => void} = {}): Promise<void> {
+	public run(): void {
+		if (this.running) throw new Error(`Trying to run a running program, stop it first`);
+
+		this.running = true;
+		this.stopping = false;
+
 		this.stack = [];
-		this.mainScope = new ProgramScope(
-			this.stack, this, null, this.commands
-		);
-		this.variables = variables;
-		this.functions = functions;
-		this.performance = { peakMem: 0 };
+		this.runningScopes = [];
+		this.stackCursor = -1;
+		this.stackSize = 0;
 		this.currentCommand = null;
+		this.writeBuffer = undefined;
+		/*this.stackChanged = false;
+		this.stackChanged = false;
+		this.waitTimerStart = Date.now();*/
+		this.mainScope = new ProgramScope(
+			this, null, this.commands
+		);
 		try {
 			this.mainScope.run();
-
-			if (this.stack.length > 0) {
-				throw new Error(`Unhandled data on end of program.`);
+			if (!this.stopping) {
+				if (this.stack.length > 0) {
+					this.printStack();
+					throw new Error(`Unhandled ${this.stack.length} data on end of program.`);
+				}
 			}
 
-			this.std_out("\n");
-			this.std_out(`Peak RAM: ${Math.round(this.performance.peakMem / 1024 / 1024 * 100) / 100} MBs`);
-			this.std_out("\n");
+			this.stack = [];
+			this.stackCursor = -1;
+			this.onStdOut(`\nProgram end\n`);
 		} catch (e) {
-			this.std_err(`Runtime error at line ${this.currentCommand[2] + 1} column ${this.currentCommand[3] + 1}: ${e}`);
+			this.onStdOut(`\nRuntime error at pos ${this.currentCommand[2]}: ${e}\n`);
 		}
+
+		this.running = false;
+		this.stopping = false;
 	}
 
-	public static fromSourceCode(
-		source: string,
-		stdout: StdOut = (...args: any[]) => { },
-		stderr: StdErr = (...args: any[]) => { }
-	): TicoProgram {
+	public stop(): void {
+		if (!this.running) throw new Error(`Trying to stop a stopped program, run it first`);
+		if (this.stopping) throw new Error(`Program already stopping.`);
+		for (const scope of this.runningScopes) {
+			scope.isStopped = true;
+		}
+		this.stopping = true;
+	}
+
+	public isRunning(): boolean {
+		return this.running;
+	}
+
+	public isStopping(): boolean {
+		return this.stopping;
+	}
+
+	public static fromSourceCode(source: string): TicoProgram {
 		const parser = new Parser();
-		return new TicoProgram(parser.parse(source), stdout, stderr);
+		const prog = new TicoProgram(parser.parse(source));
+		return prog;
 	}
 }

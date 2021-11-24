@@ -1,0 +1,191 @@
+# Cell start: 32
+# Header with 32 spaces
+10                # Number of rows
+10                # Number of columns
+0                 # Current row
+0                 # Current column
+0                 # Current idx
+-1                # Not used
+-1                # Not used
+-1                # Not used
+-1                # Not used
+-1                # Not used
+-1                # Not used
+-1                # Not used
+-1                # Not used
+-1                # Not used
+-1                # Not used
+-1                # Not used
+-1                # Not used
+-1                # Not used
+-1                # Not used
+-1                # Not used
+-1                # Not used
+-1                # Not used
+-1                # Not used
+-1                # Not used
+-1                # Not used
+-1                # Not used
+-1                # Not used
+-1                # Not used
+-1                # Not used
+-1                # Not used
+-1                # Not used
+-1                # Not used
+
+# Function that fills up the cells
+func fill_cells start
+    # Reset current row
+    2 goto dup -	
+
+    # Reset current idx
+    4 goto dup -    
+
+    # For rows
+    loop start
+        # Reset current column
+        3 goto dup -	
+
+        # For columns
+        loop start
+            # Add a cell on current idx
+            4 goto dup 31 + goto "A"
+
+            # Increment current idx
+            4 goto 1 +
+
+            # Increment current column
+            3 goto 1 +
+
+            # Check if reached number of columns
+            dup 1 dupat >= if break
+        end
+
+        # Increment current row
+        2 goto 1 +
+        
+        # Check if reached number of rows
+        dup 0 dupat >= if break
+    end
+end
+
+# Function that prints all cells
+func print_cells start
+    # Reset current row
+    2 goto dup -	
+
+    # Reset current idx
+    4 goto dup -    
+
+    # For rows
+    loop start
+        # Reset current column
+        3 goto dup -	
+
+        # For columns
+        loop start
+            # Print cell
+            4 goto dup 32 + goto dup dump
+
+            # Increment current idx
+            4 goto 1 +
+
+            # Increment current column
+            3 goto 1 +
+
+            # Check if reached number of columns
+            dup 1 dupat >= if break
+        end
+        # Prints a newline
+        "\n" dump
+
+        # Increment current row
+        2 goto 1 +
+        
+        # Check if reached number of rows
+        dup 0 dupat >= if break
+    end
+end
+
+# Function that clears all cells
+func clear_cells start
+    # Reset current row
+    2 goto dup -	
+
+    # Reset current idx
+    4 goto dup -    
+
+    # For rows
+    loop start
+        # Reset current column
+        3 goto dup -	
+
+        # For columns
+        loop start
+            # Clears the first cell
+            32 goto drop
+
+            # Increment current idx
+            4 goto 1 +
+
+            # Increment current column
+            3 goto 1 +
+
+            # Check if reached number of columns
+            dup 1 dupat >= if break
+        end
+        # Prints a newline
+        "\n" dump
+
+        # Increment current row
+        2 goto 1 +
+        
+        # Check if reached number of rows
+        dup 0 dupat >= if break
+    end
+end
+
+
+fill_cells call
+print_cells call
+clear_cells call
+
+# Drop header
+31 goto
+drop
+drop
+drop
+drop
+drop
+drop
+drop
+drop
+drop
+drop
+drop
+drop
+drop
+drop
+drop
+drop
+drop
+drop
+drop
+drop
+drop
+drop
+drop
+drop
+drop
+drop
+drop
+drop
+drop
+drop
+drop
+drop
+
+
+
+
+
