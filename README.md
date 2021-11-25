@@ -1,7 +1,3 @@
 # Tico programming language
-Tico is a stack-based programming language, written in TypeScript.
+Tico is dynamic procedural programming language, similar to JS with some abstraction of Python's features and exclusive features.
 
-This language isn't useful for real-life problems, as it is for educational purposes only.
-
-## Roadmap
-- [ ] Turing-complete
