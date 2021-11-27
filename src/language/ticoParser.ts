@@ -15,7 +15,7 @@ import {
 import { treefy, TreefyOptions } from "../utils";
 import TicoTokenizer, { TokenEnum } from "./ticoTokenizer";
 
-type StringifyOptions = {
+export type StringifyOptions = {
 	indent?: string;
 	showPosition?: boolean;
 };

@@ -1,126 +1,110 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
 exports[`testing tico parser Parses binary operators Addition 1`] = `
-"BranchNode:
-  BinaryExpressionNode:
-    left:
-      LiteralNode:
-        type: LiteralNumber
-        value: 3
-    operator: +
-    right:
-      LiteralNode:
-        type: LiteralNumber
-        value: 4
-"
+"BranchNode
+└──scope
+   └──BinaryExpressionNode
+      ├──left
+      │  └──LiteralNode
+      │     └──value: 3
+      ├──operator: \\"+\\"
+      └──right
+         └──LiteralNode
+            └──value: 4"
 `;
 
 exports[`testing tico parser Parses binary operators Division 1`] = `
-"BranchNode:
-  BinaryExpressionNode:
-    left:
-      LiteralNode:
-        type: LiteralNumber
-        value: 3
-    operator: /
-    right:
-      LiteralNode:
-        type: LiteralNumber
-        value: 4
-"
+"BranchNode
+└──scope
+   └──BinaryExpressionNode
+      ├──left
+      │  └──LiteralNode
+      │     └──value: 3
+      ├──operator: \\"/\\"
+      └──right
+         └──LiteralNode
+            └──value: 4"
 `;
 
 exports[`testing tico parser Parses binary operators Floor division 1`] = `
-"BranchNode:
-  BinaryExpressionNode:
-    left:
-      LiteralNode:
-        type: LiteralNumber
-        value: 3
-    operator: //
-    right:
-      LiteralNode:
-        type: LiteralNumber
-        value: 4
-"
+"BranchNode
+└──scope
+   └──BinaryExpressionNode
+      ├──left
+      │  └──LiteralNode
+      │     └──value: 3
+      ├──operator: \\"//\\"
+      └──right
+         └──LiteralNode
+            └──value: 4"
 `;
 
 exports[`testing tico parser Parses binary operators Modulus 1`] = `
-"BranchNode:
-  BinaryExpressionNode:
-    left:
-      LiteralNode:
-        type: LiteralNumber
-        value: 3
-    operator: %
-    right:
-      LiteralNode:
-        type: LiteralNumber
-        value: 4
-"
+"BranchNode
+└──scope
+   └──BinaryExpressionNode
+      ├──left
+      │  └──LiteralNode
+      │     └──value: 3
+      ├──operator: \\"%\\"
+      └──right
+         └──LiteralNode
+            └──value: 4"
 `;
 
 exports[`testing tico parser Parses binary operators Multiplication 1`] = `
-"BranchNode:
-  BinaryExpressionNode:
-    left:
-      LiteralNode:
-        type: LiteralNumber
-        value: 3
-    operator: *
-    right:
-      LiteralNode:
-        type: LiteralNumber
-        value: 4
-"
+"BranchNode
+└──scope
+   └──BinaryExpressionNode
+      ├──left
+      │  └──LiteralNode
+      │     └──value: 3
+      ├──operator: \\"*\\"
+      └──right
+         └──LiteralNode
+            └──value: 4"
 `;
 
 exports[`testing tico parser Parses binary operators Power 1`] = `
-"BranchNode:
-  BinaryExpressionNode:
-    left:
-      LiteralNode:
-        type: LiteralNumber
-        value: 3
-    operator: **
-    right:
-      LiteralNode:
-        type: LiteralNumber
-        value: 4
-"
+"BranchNode
+└──scope
+   └──BinaryExpressionNode
+      ├──left
+      │  └──LiteralNode
+      │     └──value: 3
+      ├──operator: \\"**\\"
+      └──right
+         └──LiteralNode
+            └──value: 4"
 `;
 
 exports[`testing tico parser Parses binary operators Subtraction 1`] = `
-"BranchNode:
-  BinaryExpressionNode:
-    left:
-      LiteralNode:
-        type: LiteralNumber
-        value: 3
-    operator: -
-    right:
-      LiteralNode:
-        type: LiteralNumber
-        value: 4
-"
+"BranchNode
+└──scope
+   └──BinaryExpressionNode
+      ├──left
+      │  └──LiteralNode
+      │     └──value: 3
+      ├──operator: \\"-\\"
+      └──right
+         └──LiteralNode
+            └──value: 4"
 `;
 
 exports[`testing tico parser Parses binary operators Unsigned modulus 1`] = `
-"BranchNode:
-  BinaryExpressionNode:
-    left:
-      LiteralNode:
-        type: LiteralNumber
-        value: 3
-    operator: %%
-    right:
-      LiteralNode:
-        type: LiteralNumber
-        value: 4
-"
+"BranchNode
+└──scope
+   └──BinaryExpressionNode
+      ├──left
+      │  └──LiteralNode
+      │     └──value: 3
+      ├──operator: \\"%%\\"
+      └──right
+         └──LiteralNode
+            └──value: 4"
 `;
 
 exports[`testing tico parser Parses empty string 1`] = `
-"BranchNode:
-"
+"BranchNode
+└──scope"
 `;

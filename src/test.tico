@@ -1,13 +1,1 @@
-writeLine(10)
-
-write("\x1b[0;38;2;255;0;0m")
-writeLine("Something")
-write("\x1b[m")
-
-write("\x1b[0;38;2;0;255;0m")
-writeLine("Something")
-write("\x1b[m")
-
-write("\x1b[0;38;2;0;0;255m")
-writeLine("Something")
-write("\x1b[m")
+10 + 20
