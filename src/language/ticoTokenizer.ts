@@ -15,6 +15,7 @@ export enum TokenEnum {
 	KeywordMin,
 
 	KeywordFunction,
+	KeywordReturn,
 
 	KeywordMax,
 
@@ -23,6 +24,7 @@ export enum TokenEnum {
 
 	LiteralNumber,
 	LiteralString,
+	LiteralBoolean,
 
 	LiteralMax,
 
@@ -40,6 +42,18 @@ export enum TokenEnum {
 	
 	BinaryOpMax,
 
+	// Conditional Operators
+	ConditionalOpMin,
+
+	ConditionalOpGreater,
+	ConditionalOpLess,
+	ConditionalOpGreaterEqual,
+	ConditionalOpLessEqual,
+	ConditionalOpEqual,
+	ConditionalOpNotEqual,
+
+	ConditionalOpMax,
+
 	// Symbols
 	SymbolMin,
 	
@@ -50,6 +64,7 @@ export enum TokenEnum {
 	SymbolCurlyBracketClose,
 	SymbolBracketOpen,
 	SymbolBracketClose,
+	SymbolComma,
 	
 	SymbolMax,
 
@@ -89,12 +104,13 @@ export default class TicoTokenizer extends Tokenizer {
 		this.addKeywords();
 		this.addLiterals();
 		this.addBinaryOps();
+		this.addConditionalOps();
 		this.addSymbols();
 		this.addExtra();
 	}
 
 	private addKeywords(): void {
-		const expectedNumTokens = 1;
+		const expectedNumTokens = 2;
 		if (TokenEnum.KeywordMax - TokenEnum.KeywordMin - 1 !== expectedNumTokens) {
 			throw new Error(`New keywords added, update this function`);
 		}
@@ -104,6 +120,9 @@ export default class TicoTokenizer extends Tokenizer {
 			switch (i) {
 				case TokenEnum.KeywordFunction: {
 					expressions = [/function/];
+				} break;
+				case TokenEnum.KeywordReturn: {
+					expressions = [/return/];
 				} break;
 				default: throw new Error(`Not implemented`);
 			}
@@ -115,7 +134,7 @@ export default class TicoTokenizer extends Tokenizer {
 	}
 
 	private addLiterals(): void {
-		const expectedNumTokens = 2;
+		const expectedNumTokens = 3;
 		if (TokenEnum.LiteralMax - TokenEnum.LiteralMin - 1 !== expectedNumTokens) {
 			throw new Error(`New literals added, update this function`);
 		}
@@ -128,6 +147,9 @@ export default class TicoTokenizer extends Tokenizer {
 				} break;
 				case TokenEnum.LiteralString: {
 					expressions = [/"(.*?)"/, /'(.*?)'/];
+				} break;
+				case TokenEnum.LiteralBoolean: {
+					expressions = [/true|false/];
 				} break;
 				default: throw new Error(`Not implemented`);
 			}
@@ -180,8 +202,45 @@ export default class TicoTokenizer extends Tokenizer {
 		}
 	}
 
+	private addConditionalOps(): void {
+		const expectedNumTokens = 6;
+		if (TokenEnum.ConditionalOpMax - TokenEnum.ConditionalOpMin - 1 !== expectedNumTokens) {
+			throw new Error(`New binary operators added, update this function`);
+		}
+		for (let i = TokenEnum.ConditionalOpMin + 1; i < TokenEnum.ConditionalOpMax; i++) {
+			let expressions = [];
+
+			switch (i) {
+				case TokenEnum.ConditionalOpGreater: {
+					expressions = [/>/];
+				} break;
+				case TokenEnum.ConditionalOpLess: {
+					expressions = [/</];
+				} break;
+				case TokenEnum.ConditionalOpGreaterEqual: {
+					expressions = [/>=/];
+				} break;
+				case TokenEnum.ConditionalOpLessEqual: {
+					expressions = [/<=/];
+				} break;
+				case TokenEnum.ConditionalOpEqual: {
+					expressions = [/==/];
+				} break;
+				case TokenEnum.ConditionalOpNotEqual: {
+					expressions = [/!=/];
+				} break;
+				
+				default: throw new Error(`Not implemented`);
+			}
+
+			for (const exp of expressions) {
+				this.addTokenDefinition(i, exp);
+			}
+		}
+	}
+
 	private addSymbols(): void {
-		const expectedNumTokens = 7;
+		const expectedNumTokens = 8;
 		if (TokenEnum.SymbolMax - TokenEnum.SymbolMin - 1 !== expectedNumTokens) {
 			throw new Error(`New symbols added, update this function`);
 		}
@@ -209,6 +268,9 @@ export default class TicoTokenizer extends Tokenizer {
 				} break;
 				case TokenEnum.SymbolBracketClose: {
 					expressions = [/\]/];
+				} break;
+				case TokenEnum.SymbolComma: {
+					expressions = [/,/];
 				} break;
 				default: throw new Error(`Not implemented`);
 			}
