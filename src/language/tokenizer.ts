@@ -1,6 +1,11 @@
 
 export type TokenDefinition = { type: any, regex: RegExp, ignore: boolean };
-export type Token = { type: any, match: RegExpMatchArray, start: number, end: number };
+export type Token = { type: any, match: RegExpMatchArray, start: number, end: number, line: number, column: number };
+
+export function throwAtPos(line: number, column: number, msg: string) {
+	const e = new SyntaxError(`At line ${line + 1} column ${column + 1}: ${msg}`);
+	return e;
+}
 
 export default class Tokenizer {
 	public skipIgnore: boolean;
@@ -51,7 +56,9 @@ export default class Tokenizer {
 					type,
 					match: matched,
 					start: this.cursor,
-					end: this.cursor + matched[0].length
+					end: this.cursor + matched[0].length,
+					line: -1,
+					column: -1,
 				};
 				if (tk === null || newToken.match[0].length > tk.match[0].length) {
 					tk = newToken;
@@ -75,11 +82,14 @@ export default class Tokenizer {
 				if (tkGet === null) {
 					tkGet = (/^./).exec(str);
 				}
+				const [line, column] = this.getCursorInfo(this.cursor);
 				tk = {
 					type: "INVALID",
 					match: tkGet,
 					start: this.cursor,
-					end: this.cursor + tkGet[0].length
+					end: this.cursor + tkGet[0].length,
+					line,
+					column
 				};
 				this.cursor += tkGet[0].length;
 			} else {
@@ -87,23 +97,29 @@ export default class Tokenizer {
 					type: "EOF",
 					match: null,
 					start: this.cursor,
-					end: this.cursor
+					end: this.cursor,
+					line: -1,
+					column: -1
 				};
 			}
 		}
+
+		const [line, column] = this.getCursorInfo(tk.start);
+		tk.line = line;
+		tk.column = column;
 
 		return tk;
 	}
 
 	public getCursorInfo(pos: number): [number, number] {
-		let [cursorLine, cursorColumn] = [0, 0];
+		let [cursorLine, cursorColumn] = [0, -1];
 		for (let i = 0; i <= pos; i++) {
 			const c = this.source[i];
 			if (c !== "\r") cursorColumn += 1;
 			if (c === "\t") cursorColumn += 3;
 			if (c === "\n") {
 				cursorLine += 1;
-				cursorColumn = 0;
+				cursorColumn = -1;
 			}
 		}
 		return [cursorLine, cursorColumn];
@@ -138,12 +154,16 @@ export default class Tokenizer {
 			type: "EOF",
 			match: null,
 			start: this.cursor - 1,
-			end: this.cursor - 1
+			end: this.cursor - 1,
+			line: -1,
+			column: -1
 		};
 		return this.tokens[this.tokenCursor];
 	}
 
 	public tkRet(pos: number): null { this.tokenCursor = pos; return null; }
 
-	public tokensLeft(): number { return this.numTokens - this.tokenCursor;}
+	public tokensLeft(): number { return this.numTokens - this.tokenCursor; }
+
+	public getTokens(): Token[] { return [...this.tokens]; }
 }
