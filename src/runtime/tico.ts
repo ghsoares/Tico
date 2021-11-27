@@ -321,12 +321,12 @@ export default class TicoProgram {
 			create(func: FunctionExpressionNode): void {
 				if (found) throw throwAtPos(node.line, node.column, `Identifier "${key}" already exists`);
 
-				func.args.forEach(arg => {
+				/*func.args.forEach(arg => {
 					if (arg.defaultValue)
 						arg.defaultValueEvaluated = self.evaluateExpression(branch, arg.defaultValue);
 					else
 						arg.defaultValueEvaluated = null;
-				});
+				});*/
 
 				func.parent = branch;
 				obj[key] = func;
@@ -347,6 +347,7 @@ export default class TicoProgram {
 						const arg = fArgs[i];
 						const id = arg.id.id.match[0];
 						if (i >= args.length) {
+							// TODO: Switch between pre-evaluated default value or procedural default value
 							f.variables[id] = self.evaluateExpression(branch, arg.defaultValue);
 						} else {
 							f.variables[id] = args[i];
