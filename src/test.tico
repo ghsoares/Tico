@@ -1,1 +1,16 @@
-10 + 20
+a = 10; b = 20;
+function multiply(c, !d = a + b) { c * d }
+a = 30; b = 500;
+writeLine(multiply(30))
+
+color(
+	255, 0, 0,
+	0, 255, 0
+)
+
+write("Hello!")
+
+colorReset()
+
+write("\n")
+writeLine("Hello!")

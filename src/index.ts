@@ -18,12 +18,4 @@ const astLines = str.split("\n").length - 1;
 process.stdout.write(str + "\n");
 process.stdout.write(`AST has ${astLines} lines\n`);
 
-program.run({}, {
-	'write': (...args: any[]) => {
-		process.stdout.write(unescapeString(args.join("")));
-	},
-	'writeLine': (...args: any[]) => {
-		process.stdout.write(unescapeString(args.join("")) + "\n");
-	},
-
-});
+program.run();

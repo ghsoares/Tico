@@ -65,6 +65,7 @@ export enum TokenEnum {
 	SymbolBracketOpen,
 	SymbolBracketClose,
 	SymbolComma,
+	SymbolExclamationMark,
 	
 	SymbolMax,
 
@@ -240,7 +241,7 @@ export default class TicoTokenizer extends Tokenizer {
 	}
 
 	private addSymbols(): void {
-		const expectedNumTokens = 8;
+		const expectedNumTokens = 9;
 		if (TokenEnum.SymbolMax - TokenEnum.SymbolMin - 1 !== expectedNumTokens) {
 			throw new Error(`New symbols added, update this function`);
 		}
@@ -271,6 +272,9 @@ export default class TicoTokenizer extends Tokenizer {
 				} break;
 				case TokenEnum.SymbolComma: {
 					expressions = [/,/];
+				} break;
+				case TokenEnum.SymbolExclamationMark: {
+					expressions = [/!/];
 				} break;
 				default: throw new Error(`Not implemented`);
 			}

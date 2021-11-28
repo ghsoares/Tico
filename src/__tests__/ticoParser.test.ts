@@ -138,7 +138,7 @@ describe('testing tico parser', () => {
 				expect(program.run()).toBe(900);
 			});
 
-			test('Default value expression order of execution', () => {
+			test('Default value', () => {
 				const program = TicoProgram.fromSourceCode(
 					`a = 10; b = 20;
 					function multiply(c, d = a + b) {return c * d}
@@ -146,6 +146,16 @@ describe('testing tico parser', () => {
 					multiply(30)`
 				);
 				expect(program.run()).toBe(15900);
+			});
+
+			test('Static default value', () => {
+				const program = TicoProgram.fromSourceCode(
+					`a = 10; b = 20;
+					function multiply(c, !d = a + b) {return c * d}
+					a = 30; b = 500;
+					multiply(30)`
+				);
+				expect(program.run()).toBe(900);
 			});
 		});
 	});

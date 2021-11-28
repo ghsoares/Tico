@@ -1,6 +1,7 @@
 import TicoParser from "../language/ticoParser";
 import { TokenEnum } from "../language/ticoTokenizer";
 import { throwAtPos, Token } from "../language/tokenizer";
+import { foregroundReset, colorfy, foreground, unescapeString, background, backgroundReset } from "../utils";
 
 export enum NodeType {
 	Branch,
@@ -61,8 +62,9 @@ export type SetNode = {
 
 export type FunctionArgNode = {
 	id: IdentifierNode;
-	defaultValue: Node;
+	defaultValueExpression: Node;
 	defaultValueEvaluated?: any;
+	staticDefaultValue: boolean;
 } & Node;
 
 export type FunctionExpressionNode = {
@@ -92,7 +94,7 @@ type FunctionValue = {
 export default class TicoProgram {
 	private mainBranch: BranchNode;
 	private variables: { [key: string]: any };
-	private functions: { [key: string]: () => any };
+	private functions: { [key: string]: (...args: any[]) => any };
 
 	public constructor(main: BranchNode) {
 		this.mainBranch = main;
@@ -321,12 +323,13 @@ export default class TicoProgram {
 			create(func: FunctionExpressionNode): void {
 				if (found) throw throwAtPos(node.line, node.column, `Identifier "${key}" already exists`);
 
-				/*func.args.forEach(arg => {
-					if (arg.defaultValue)
-						arg.defaultValueEvaluated = self.evaluateExpression(branch, arg.defaultValue);
-					else
+				func.args.forEach(arg => {
+					if (arg.staticDefaultValue) {
+						arg.defaultValueEvaluated = self.evaluateExpression(branch, arg.defaultValueExpression);
+					} else {
 						arg.defaultValueEvaluated = null;
-				});*/
+					}
+				});
 
 				func.parent = branch;
 				obj[key] = func;
@@ -347,8 +350,11 @@ export default class TicoProgram {
 						const arg = fArgs[i];
 						const id = arg.id.id.match[0];
 						if (i >= args.length) {
-							// TODO: Switch between pre-evaluated default value or procedural default value
-							f.variables[id] = self.evaluateExpression(branch, arg.defaultValue);
+							if (arg.staticDefaultValue) {
+								f.variables[id] = arg.defaultValueEvaluated;
+							} else {
+								f.variables[id] = self.evaluateExpression(branch, arg.defaultValueExpression);
+							}
 						} else {
 							f.variables[id] = args[i];
 						}
@@ -376,8 +382,39 @@ export default class TicoProgram {
 		variables: { [key: string]: any } = {},
 		functions: { [key: string]: any } = () => { }
 	): any {
-		this.variables = variables;
-		this.functions = functions;
+		this.variables = {
+			...variables
+		};
+		this.functions = {
+			...functions,
+			'write': (what: any) => {
+				return process.stdout.write(unescapeString("" + what))
+			},
+			'writeLine': (what: any) => {
+				return process.stdout.write(unescapeString("" + what) + "\n")
+			},
+			'fg': (r: number, g: number, b: number) => {
+				return process.stdout.write(foreground([r, g, b]));
+			},
+			'fgReset': () => {
+				return process.stdout.write(foregroundReset());
+			},
+			'bg': (r: number, g: number, b: number) => {
+				return process.stdout.write(background([r, g, b]));
+			},
+			'bgReset': () => {
+				return process.stdout.write(backgroundReset());
+			},
+			'color': (
+				r1: number, g1: number, b1: number,
+				r2: number, g2: number, b2: number
+			) => {
+				return process.stdout.write(foreground([r1, g1, b1]) + background([r2, g2, b2]));
+			},
+			'colorReset': () => {
+				return process.stdout.write(foregroundReset() + backgroundReset());
+			}
+		};
 		this.mainBranch.variables = {};
 		this.mainBranch.functions = {};
 		this.mainBranch.stopped = false;

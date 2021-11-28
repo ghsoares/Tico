@@ -23,12 +23,12 @@ export type TreefyOptions = {
 export function treefy(tree: Object, options: TreefyOptions = {}): string {
 	const {
 		colors 		 =	true,
-		titleColor 	 = 	[51 , 255, 180],
-		keyColor 	 = 	[61 , 219, 214],
+		titleColor 	 = 	[0 , 255, 127],
+		keyColor 	 = 	[51, 218, 255],
 		arrowsColor  = 	[255, 255, 255],
-		numberColor  = 	[255, 174, 112],
-		stringColor  = 	[219, 255, 140],
-		booleanColor = 	[255, 143, 165],
+		numberColor  = 	[255, 150, 51],
+		stringColor  = 	[255, 209, 81],
+		booleanColor = 	[255, 81, 109],
 	} = options;
 
 	const applyColor = (str: string, c: Color) => colors ? colorfy(str, c) : str;
@@ -137,14 +137,36 @@ export function treefy(tree: Object, options: TreefyOptions = {}): string {
 	return s.slice(0, s.length - 1);
 }
 
-export function colorfy(str: string, rgb: Color): string {
+export function foreground(rgb: Color): string {
 	let [r, g, b] = rgb;
 
 	r = r < 0 ? 0 : r > 255 ? 255 : r;
 	g = g < 0 ? 0 : g > 255 ? 255 : g;
 	b = b < 0 ? 0 : b > 255 ? 255 : b;
 
-	return `\x1b[0;38;2;${r};${g};${b}m${str}\x1b[m`;
+	return `\x1b[38;2;${r};${g};${b}m`;
+}
+
+export function foregroundReset(): string {
+	return `\x1b[37m`;
+}
+
+export function background(rgb: Color): string {
+	let [r, g, b] = rgb;
+
+	r = r < 0 ? 0 : r > 255 ? 255 : r;
+	g = g < 0 ? 0 : g > 255 ? 255 : g;
+	b = b < 0 ? 0 : b > 255 ? 255 : b;
+
+	return `\x1b[48;2;${r};${g};${b}m`;
+}
+
+export function backgroundReset(): string {
+	return `\x1b[40m`;
+}
+
+export function colorfy(str: string, rgb: Color): string {
+	return foreground(rgb) + str + foregroundReset();
 }
 
 export function unescapeString(str: string): string {
@@ -158,6 +180,7 @@ export function unescapeString(str: string): string {
 	.replace(/\\b/g, 	"\b")
 	.replace(/\\f/g, 	"\f")
 	.replace(/\\v/g, 	"\v")
+	.replace(/\\e/g, 	"\x1b")
 	.replace(/\\0/g, 	"\0")
 	;
 

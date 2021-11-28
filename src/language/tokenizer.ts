@@ -163,6 +163,11 @@ export default class Tokenizer {
 
 	public tkRet(pos: number): null { this.tokenCursor = pos; return null; }
 
+	public tkThrowErr(msg: string) {
+		const currTk = this.currTk();
+		throw new SyntaxError(`At line ${currTk.line+1} column ${currTk.column+1}: ${msg}`);
+	}
+
 	public tokensLeft(): number { return this.numTokens - this.tokenCursor; }
 
 	public getTokens(): Token[] { return [...this.tokens]; }

@@ -78,7 +78,7 @@ export default class TicoParser {
 			const val = this.expression();
 			if (!val) {
 				if (args.length > 0)
-					throw new Error(`Expected expression`);
+					this.tokenizer.tkThrowErr(`Expected expression`);
 				break;
 			}
 
@@ -105,7 +105,7 @@ export default class TicoParser {
 
 		const close = this.tokenizer.tk(TokenEnum.SymbolParClose);
 		if (!close)
-			throw new Error(`Expected ")"`);
+			this.tokenizer.tkThrowErr(`Expected ")"`);
 
 		return {
 			type: NodeType.FunctionCall,
@@ -129,7 +129,7 @@ export default class TicoParser {
 
 		const parClose = this.tokenizer.tk(TokenEnum.SymbolParClose);
 		if (!parOpen)
-			throw new Error(`Expected ")"`);
+			this.tokenizer.tkThrowErr(`Expected ")"`);
 
 		if (!expr)
 			return null;
@@ -172,7 +172,7 @@ export default class TicoParser {
 			if (!op) { return l; }
 
 			const next = this.expressionMember();
-			if (!next) throw new Error(`Expected expression member`);
+			if (!next) this.tokenizer.tkThrowErr(`Expected expression member`);
 
 			let right = next;
 			if (id > 0) {
@@ -263,7 +263,7 @@ export default class TicoParser {
 			return this.tokenizer.tkRet(tkPos);
 
 		const expr = this.expression();
-		if (!expr) throw new Error(`Expected expression`);
+		if (!expr) this.tokenizer.tkThrowErr(`Expected expression`);
 
 		const node: SetNode = {
 			type: NodeType.Set,
@@ -282,10 +282,12 @@ export default class TicoParser {
 		const args: FunctionArgNode[] = [];
 
 		while (true) {
+			const staticArg = this.tokenizer.tk(TokenEnum.SymbolExclamationMark) !== null;
+
 			const id = this.identifier() as IdentifierNode;
 			if (!id) {
 				if (args.length > 0)
-					throw new Error(`Expected identifier`);
+					this.tokenizer.tkThrowErr(`Expected identifier`);
 				break;
 			}
 
@@ -294,13 +296,15 @@ export default class TicoParser {
 			if (eq) {
 				defValue = this.expression();
 				if (!defValue)
-					throw new Error(`Expected expression`);
-			}
+					this.tokenizer.tkThrowErr(`Expected expression`);
+			} else if (staticArg)
+				this.tokenizer.tkThrowErr(`Static argument declaration expects a default value expression`);
 
 			args.push({
 				type: NodeType.FunctionArg,
 				id,
-				defaultValue: defValue,
+				defaultValueExpression: defValue,
+				staticDefaultValue: staticArg,
 				start: id.start,
 				end: defValue ? defValue.end : id.end,
 				line: id.line,
@@ -323,18 +327,18 @@ export default class TicoParser {
 
 		const id = this.identifier() as IdentifierNode;
 		if (!id)
-			throw new Error(`Expected identifier`);
+			this.tokenizer.tkThrowErr(`Expected identifier`);
 
 		if (!this.tokenizer.tk(TokenEnum.SymbolParOpen))
-			throw new Error(`Expected "("`);
+			this.tokenizer.tkThrowErr(`Expected "("`);
 
 		const args = this.functionExpressionArgs();
 
 		if (!this.tokenizer.tk(TokenEnum.SymbolParClose))
-			throw new Error(`Expected ")"`);
+			this.tokenizer.tkThrowErr(`Expected ")"`);
 
 		if (!this.tokenizer.tk(TokenEnum.SymbolCurlyBracketOpen))
-			throw new Error(`Expected "{"`);
+			this.tokenizer.tkThrowErr(`Expected "{"`);
 
 		const branch = this.branch() as FunctionExpressionNode;
 		branch.type = NodeType.FunctionExpression;
@@ -398,7 +402,7 @@ export default class TicoParser {
 			}
 		}
 
-		if (!main && !ended) throw new Error(`Expected "}"`);
+		if (!main && !ended) this.tokenizer.tkThrowErr(`Expected "}"`);
 
 		return branch;
 	}
@@ -411,7 +415,7 @@ export default class TicoParser {
 			const main = this.branch(true);
 
 			if (this.tokenizer.tokensLeft() > 0) {
-				throw new Error(`Unexpected token [${this.tokenizer.currTk().match[0]}]`);
+				this.tokenizer.tkThrowErr(`Unexpected token [${this.tokenizer.currTk().match[0]}]`);
 			}
 
 			return main;
@@ -493,7 +497,8 @@ export default class TicoParser {
 					if (showPosition) tree['position'] = position();
 
 					tree['id'] = getTree(nd.id);
-					tree['defaultValue'] = getTree(nd.defaultValue);
+					tree['defaultValue'] = getTree(nd.defaultValueExpression);
+					tree['staticDefaultValue'] = nd.staticDefaultValue;
 				} break;
 				case NodeType.FunctionExpression: {
 					const nd = n as FunctionExpressionNode;
