@@ -172,6 +172,8 @@ export default class TicoParser {
 	private expressionMember(): Node {
 		return  this.negateExpression() ||
 				this.wrappedExpression() ||
+				this.functionCall() ||
+				this.identifier() ||
 				this.literal()
 				;
 	}
