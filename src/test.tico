@@ -1,16 +1,28 @@
-a = 10; b = 20;
-function multiply(c, !d = a + b) { c * d }
-a = 30; b = 500;
-writeLine(multiply(30))
+#*
 
-color(
-	255, 0, 0,
-	0, 255, 0
-)
+i = 0;
+max = 1000;
 
-write("Hello!")
+while (i <= max) {
+	if (i % 3 == 0) {
+		write("Fizz");
+	}
+	if (i % 5 == 0) {
+		write("Buzz");
+	}
+	if (i % 3 != 0 && i % 5 != 0) {
+		write(i);
+	}
+	
+	if (i < max) {
+		write(", ");
+	} else {
+		write("\n");
+	}
 
-colorReset()
+	i = i + 1;
+}
 
-write("\n")
-writeLine("Hello!")
+*#
+
+a = 30000n + BigInt(90)
