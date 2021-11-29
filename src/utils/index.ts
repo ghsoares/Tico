@@ -10,28 +10,32 @@ type Color = [number, number, number];
 
 export type TreefyOptions = {
 	colors?: boolean;
-	arrowsColor?: Color;
-	titleColor?: Color;
-	keyColor?: Color;
 
-	// Literals
-	numberColor?: Color;
-	stringColor?: Color;
-	booleanColor?: Color;
+	// Tree colors
+	arrowsColor?: [Color, Color];
+	titleColor?: [Color, Color];
+	keyColor?: [Color, Color];
+
+	// Literal colors
+	numberColor?: [Color, Color];
+	bigIntColor?: [Color, Color];
+	stringColor?: [Color, Color];
+	booleanColor?: [Color, Color];
 };
 
 export function treefy(tree: Object, options: TreefyOptions = {}): string {
 	const {
 		colors 		 =	true,
-		titleColor 	 = 	[0 , 255, 127],
-		keyColor 	 = 	[51, 218, 255],
-		arrowsColor  = 	[255, 255, 255],
-		numberColor  = 	[255, 150, 51],
-		stringColor  = 	[255, 209, 81],
-		booleanColor = 	[255, 81, 109],
+		titleColor 	 = 	[fromHex("#00ff7f"), fromHex(null)],
+		keyColor 	 = 	[fromHex("#33daff"), fromHex(null)],
+		arrowsColor  = 	[fromHex("#ffffff"), fromHex(null)],
+		numberColor  = 	[fromHex("#ff9605"), fromHex(null)],
+		bigIntColor  = 	[fromHex("#c299ff"), fromHex(null)],
+		stringColor  = 	[fromHex("#FFCA68"), fromHex(null)],
+		booleanColor = 	[fromHex("#ff516d"), fromHex(null)]
 	} = options;
 
-	const applyColor = (str: string, c: Color) => colors ? colorfy(str, c) : str;
+	const applyColor = (str: string, c: [Color, Color]) => colors ? colorfy(str, c[0], c[1]) : str;
 	
 	const arrows = [
 		applyColor("├──", arrowsColor),
@@ -119,6 +123,8 @@ export function treefy(tree: Object, options: TreefyOptions = {}): string {
 
 				if (typeof v === 'number') {
 					vs = applyColor(`${v}`, numberColor);
+				} else if (typeof v === 'bigint') {
+					vs = applyColor(`BigInt(${v})`, bigIntColor);
 				} else if (typeof v === 'string') {
 					vs = applyColor(`"${v}"`, stringColor);
 				} else if (typeof v === 'boolean') {
@@ -165,8 +171,37 @@ export function backgroundReset(): string {
 	return `\x1b[40m`;
 }
 
-export function colorfy(str: string, rgb: Color): string {
-	return foreground(rgb) + str + foregroundReset();
+export function colorfy(str: string, fg: Color, bg: Color = null): string {
+	let ss = "";
+
+	ss += foreground(fg);
+	if (bg) {
+		ss += background(bg);
+	}
+
+	ss += str;
+
+	ss += foregroundReset();
+	ss += backgroundReset();
+
+	return ss;
+}
+
+export function fromHex(hex: string): Color {
+	if (hex === null) return null;
+
+	const m = (/#?([0-9a-fA-F]{1,2})([0-9a-fA-F]{1,2})([0-9a-fA-F]{1,2})/).exec(hex);
+	if (m) {
+		let [_, r, g, b] = m;
+	
+		return [
+			parseInt(r, 16),
+			parseInt(g, 16),
+			parseInt(b, 16)
+		];
+	} else {
+		throw new Error(`Wrong format`);
+	}
 }
 
 export function unescapeString(str: string): string {
