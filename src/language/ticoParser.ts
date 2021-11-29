@@ -272,6 +272,17 @@ export default class TicoParser {
 
 		return right;
 	}
+
+	/*private conditionalExpressionRecursive(left: Node): Node {
+		const operators = [
+			TokenEnum.ConditionalOpGreater,
+			TokenEnum.ConditionalOpLess,
+			TokenEnum.ConditionalOpGreaterEqual,
+			TokenEnum.ConditionalOpLessEqual,
+			TokenEnum.ConditionalOpEqual,
+			TokenEnum.ConditionalOpNotEqual,
+			TokenEnum.ConditionalAnd,
+			TokenEnum.ConditionalOr
 		];
 
 		if (operators.length !== (TokenEnum.BinaryOpMax - TokenEnum.BinaryOpMin) - 1)
@@ -281,7 +292,7 @@ export default class TicoParser {
 			const op = this.tokenizer.tk(operators[id]);
 			if (!op) { return l; }
 
-			const next = this.expressionMember();
+			const next = this.binaryExpression() || this.expressionMember();
 			if (!next) this.tokenizer.tkThrowErr(`Expected expression member`);
 
 			let right = next;
@@ -291,8 +302,8 @@ export default class TicoParser {
 				}
 			}
 
-			const node: BinaryExpressionNode = {
-				type: NodeType.BinaryExpression,
+			const node: ConditionalExpressionNode = {
+				type: NodeType.ConditionalExpression,
 				left: l,
 				operator: op,
 				right,
@@ -310,19 +321,23 @@ export default class TicoParser {
 			expr = operator(expr, i);
 		}
 
+		if (expr === left) return null;
+
 		return expr;
 	}
 
-	private binaryExpression(): Node {
+	private conditionalExpression(): Node {
 		const tkPos = this.tokenizer.tkCursor();
 
-		const head = this.expressionMember();
+		const head = this.binaryExpression() || this.expressionMember();
 		if (!head) { return this.tokenizer.tkRet(tkPos); }
 
-		const right = this.binaryExpressionRecursive(head);
+		const right = this.conditionalExpressionRecursive(head);
 		if (!right) { return this.tokenizer.tkRet(tkPos); }
 
 		return right;
+	}*/
+
 	private ifExpression(): Node {
 		const tkPos = this.tokenizer.tkCursor();
 
@@ -626,7 +641,7 @@ export default class TicoParser {
 					tree['operator'] = nd.operator.match[0];
 					tree['right'] = getTree(nd.right);
 				} break;
-				case NodeType.ConditionalExpression: {
+				/*case NodeType.ConditionalExpression: {
 					const nd = n as ConditionalExpressionNode;
 
 					tree['title'] = "ConditionalExpressionNode";
@@ -635,6 +650,7 @@ export default class TicoParser {
 					tree['left'] = getTree(nd.left);
 					tree['operator'] = nd.operator.match[0];
 					tree['right'] = getTree(nd.right);
+				} break;*/
 				case NodeType.NegateExpression: {
 					const nd = n as NegateExpressionNode;
 
