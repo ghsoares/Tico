@@ -13,6 +13,7 @@ import {
 	NegateExpressionNode,
 	IfExpressionNode,
 	ElseExpressionNode,
+	WhileLoopExpressionNode
 } from "../runtime/tico";
 import { treefy, TreefyOptions } from "../utils";
 import TicoTokenizer, { TokenEnum } from "./ticoTokenizer";
@@ -300,29 +301,25 @@ export default class TicoParser {
 		return branch;
 	}
 
-		const operator = this.tokenizer.tk(TokenEnum.ConditionalOpGreater) ||
-			this.tokenizer.tk(TokenEnum.ConditionalOpLess) ||
-			this.tokenizer.tk(TokenEnum.ConditionalOpGreaterEqual) ||
-			this.tokenizer.tk(TokenEnum.ConditionalOpLessEqual) ||
-			this.tokenizer.tk(TokenEnum.ConditionalOpEqual) ||
-			this.tokenizer.tk(TokenEnum.ConditionalOpNotEqual)
-			;
+	private whileExpression() {
+		const tkPos = this.tokenizer.tkCursor();
 
-		if (!operator) { return this.tokenizer.tkRet(tkPos); }
+		const whileKey = this.tokenizer.tk(TokenEnum.KeywordWhile);
+		if (!whileKey) { return this.tokenizer.tkRet(tkPos); }
 
-		const rightExpr = expr();
-		if (!rightExpr) { return this.tokenizer.tkRet(tkPos); }
+		const expr = this.expression();
+		if (!expr)
+			this.tokenizer.tkThrowErr("Expected expression");
 
-		return {
-			type: NodeType.ConditionalExpression,
-			left: leftExpr,
-			operator: operator,
-			right: rightExpr,
-			start: leftExpr.start,
-			end: rightExpr.end,
-			line: leftExpr.line,
-			column: leftExpr.column
-		} as ConditionalExpressionNode;
+		const branch = this.branch() as WhileLoopExpressionNode;
+
+		branch.type = NodeType.WhileLoopExpression;
+		branch.condition = expr;
+		branch.start = whileKey.start;
+		branch.line = whileKey.line;
+		branch.column = whileKey.column;
+
+		return branch;
 	}
 
 	private variableSet(): Node {
@@ -441,6 +438,7 @@ export default class TicoParser {
 		const expr = this.negateExpression() ||
 			this.returnExpression() ||
 			this.ifExpression() ||
+			this.whileExpression() ||
 		const branch: BranchNode = {
 			type: NodeType.Branch,
 			parent: null,
@@ -578,6 +576,18 @@ export default class TicoParser {
 						tree['scope'] = nd.children.map(c => getTree(c));
 					}
 				} break;
+				case NodeType.WhileLoopExpression: {
+					const nd = n as WhileLoopExpressionNode;
+
+					tree['title'] = "WhileLoopExpressionNode";
+					if (showPosition) tree['position'] = position();
+
+					tree['condition'] = getTree(nd.condition);
+					if (nd.children.length === 0) {
+						tree['scope'] = 'empty';
+					} else {
+						tree['scope'] = nd.children.map(c => getTree(c));
+					}
 				} break;
 				case NodeType.Literal: {
 					const nd = n as LiteralNode;
