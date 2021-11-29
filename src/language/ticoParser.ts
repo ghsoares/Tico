@@ -180,14 +180,98 @@ export default class TicoParser {
 
 	private binaryExpressionRecursive(left: Node): Node {
 		const operators = [
+			// Binary
 			TokenEnum.BinaryOpStarStar,
-			TokenEnum.BinaryOpStar,
+
 			TokenEnum.BinaryOpSlash,
 			TokenEnum.BinaryOpSlashSlash,
+
 			TokenEnum.BinaryOpModulus,
 			TokenEnum.BinaryOpModulusModulus,
+
+			TokenEnum.BinaryOpStar,
+
+			TokenEnum.BinaryOpMinus,
 			TokenEnum.BinaryOpPlus,
-			TokenEnum.BinaryOpMinus
+
+			// Conditional
+			TokenEnum.ConditionalOpGreater,
+			TokenEnum.ConditionalOpLess,
+			TokenEnum.ConditionalOpGreaterEqual,
+			TokenEnum.ConditionalOpLessEqual,
+			TokenEnum.ConditionalOpEqual,
+			TokenEnum.ConditionalOpNotEqual,
+			TokenEnum.ConditionalAnd,
+			TokenEnum.ConditionalOr
+		];
+
+		/*if (operators.length !== (TokenEnum.BinaryOpMax - TokenEnum.BinaryOpMin) - 1)
+			throw new Error(`New binary operators added, update this function`)*/
+
+		const operator = (l: Node, id: number): Node => {
+			const op = this.tokenizer.tk(operators[id]);
+			if (!op) { return l; }
+
+			const next = this.expressionMember();
+			if (!next) this.tokenizer.tkThrowErr(`Expected expression member`);
+
+			let right = next;
+			for (let i = id - 1; i >= 0; i--) {
+				right = operator(right, i);
+			}
+
+			let node: Node = {
+				type: NodeType.BinaryExpression,
+				left: l,
+				operator: op,
+				right,
+				start: l.start,
+				end: right.end,
+				line: l.line,
+				column: l.column
+			} as BinaryExpressionNode;
+
+			node = operator(node, id);
+			/*for (let i = 0; i < operators.length; i++) {
+				node = operator(node, i);
+			}*/
+
+			return node;
+		}
+
+		let expr = left;
+		let before = left;
+		while (true) {
+			for (let i = 0; i < operators.length; i++) {
+				expr = operator(expr, i);
+			}
+			for (let i = 0; i < operators.length; i++) {
+				expr = operator(expr, i);
+			}
+			if (expr === before) {
+				break;
+			}
+			else {
+				before = expr;
+			}
+		}
+
+		if (expr === left) return null;
+
+		return expr;
+	}
+
+	private binaryExpression(): Node {
+		const tkPos = this.tokenizer.tkCursor();
+
+		const head = this.expressionMember();
+		if (!head) { return this.tokenizer.tkRet(tkPos); }
+
+		const right = this.binaryExpressionRecursive(head);
+		if (!right) { return this.tokenizer.tkRet(tkPos); }
+
+		return right;
+	}
 		];
 
 		if (operators.length !== (TokenEnum.BinaryOpMax - TokenEnum.BinaryOpMin) - 1)
