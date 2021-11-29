@@ -465,7 +465,15 @@ export default class TicoProgram {
 	}
 
 	private evaluateReturnExpression(branch: BranchNode, node: ReturnExpressionNode): any {
-		branch.stopped = true;
+		
+		let b = branch;
+		while (true) {
+			b.stopped = true;
+			if (b.type in [NodeType.FunctionExpression]) break;
+			if (b.parent) b = b.parent;
+			else break;
+		}
+
 		if (node.expression === null) return null;
 		return this.evaluateExpression(branch, node.expression);
 	}
