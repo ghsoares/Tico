@@ -522,6 +522,8 @@ export default class TicoParser {
 		branch.id = id;
 		branch.args = args;
 		branch.start = keyFunc.start;
+		branch.line = keyFunc.line;
+		branch.column = keyFunc.column;
 
 		return branch;
 	}
