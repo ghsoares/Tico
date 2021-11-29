@@ -172,44 +172,67 @@ export default class TicoProgram {
 		let rightValue: any = this.evaluateExpression(branch, right);
 
 		switch (operator.type) {
+			// Arithmetic
 			case TokenEnum.BinaryOpPlus: {
-				if (leftValue['add'])
-					return leftValue.add(rightValue);
+				const addOverload = leftValue['add'] || rightValue['add'];
+				if (addOverload) 
+					return addOverload(leftValue, rightValue);
+
 				return leftValue + rightValue;
 			}
 			case TokenEnum.BinaryOpMinus: {
-				if (leftValue['sub'])
-					return leftValue.sub(rightValue);
+				const subOverload = leftValue['sub'] || rightValue['sub'];
+				if (subOverload) 
+					return subOverload(leftValue, rightValue);
+
 				return leftValue - rightValue;
 			}
 			case TokenEnum.BinaryOpStar: {
-				if (leftValue['mlt'])
-					return leftValue.mlt(rightValue);
+				const multOverload = leftValue['mult'] || rightValue['mult'];
+				if (multOverload) 
+					return multOverload(leftValue, rightValue);
+				
 				return leftValue * rightValue;
 			}
 			case TokenEnum.BinaryOpStarStar: {
-				if (leftValue['pow'])
-					return leftValue.pow(rightValue);
-				return Math.pow(leftValue, rightValue);
+				const powOverload = leftValue['pow'] || rightValue['pow'];
+				if (powOverload) 
+					return powOverload(leftValue, rightValue);
+				
+				return leftValue ** rightValue;
 			}
 			case TokenEnum.BinaryOpSlash: {
-				if (leftValue['div'])
-					return leftValue.div(rightValue);
+				const divOverload = leftValue['div'] || rightValue['div'];
+				if (divOverload) 
+					return divOverload(leftValue, rightValue);
+				
 				return leftValue / rightValue;
 			}
 			case TokenEnum.BinaryOpSlashSlash: {
-				if (leftValue['div'])
-					return Math.floor(leftValue.div(rightValue));
+				const fdivOverload = leftValue['fdiv'] || rightValue['fdiv'];
+				if (fdivOverload) 
+					return fdivOverload(leftValue, rightValue);
+				
 				return Math.floor(leftValue / rightValue);
 			}
 			case TokenEnum.BinaryOpModulus: {
-				if (leftValue['mod'])
-					return leftValue.mod(rightValue);
+				const modOverload = leftValue['mod'] || rightValue['mod'];
+				if (modOverload) 
+					return modOverload(leftValue, rightValue);
+				
 				return leftValue % rightValue;
 			}
 			case TokenEnum.BinaryOpModulusModulus: {
-				if (leftValue['mod'] && leftValue['add'])
-					return leftValue.mod(rightValue).add(rightValue).mod(rightValue);
+				const modOverload = leftValue['mod'] || rightValue['mod'];
+				const addOverload = leftValue['add'] || rightValue['add'];
+				if (modOverload) {
+					return modOverload(
+						addOverload(
+							modOverload(leftValue, rightValue), rightValue
+						), rightValue
+					);
+				}
+				
 				return ((leftValue % rightValue) + rightValue) % rightValue;
 			}
 			default: throw throwAtPos(operator.line, operator.column, `Not implemented`);
