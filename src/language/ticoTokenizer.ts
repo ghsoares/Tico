@@ -15,6 +15,11 @@ export enum TokenEnum {
 
 	KeywordFunction,
 	KeywordReturn,
+	KeywordIf,
+	KeywordElse,
+	KeywordElif,
+	KeywordWhile,
+	KeywordFor,
 
 	KeywordMax,
 
@@ -112,7 +117,7 @@ export default class TicoTokenizer extends Tokenizer {
 	}
 
 	private addKeywords(): void {
-		const expectedNumTokens = 2;
+		const expectedNumTokens = 7;
 		if (TokenEnum.KeywordMax - TokenEnum.KeywordMin - 1 !== expectedNumTokens) {
 			throw new Error(`New keywords added, update this function`);
 		}
@@ -125,6 +130,21 @@ export default class TicoTokenizer extends Tokenizer {
 				} break;
 				case TokenEnum.KeywordReturn: {
 					expressions = [/return/];
+				} break;
+				case TokenEnum.KeywordIf: {
+					expressions = [/if/];
+				} break;
+				case TokenEnum.KeywordElse: {
+					expressions = [/else/];
+				} break;
+				case TokenEnum.KeywordElif: {
+					expressions = [/elif/];
+				} break;
+				case TokenEnum.KeywordWhile: {
+					expressions = [/while/];
+				} break;
+				case TokenEnum.KeywordFor: {
+					expressions = [/for/];
 				} break;
 				default: throw new Error(`Not implemented`);
 			}
