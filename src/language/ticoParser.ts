@@ -517,9 +517,6 @@ export default class TicoParser {
 		if (!this.tokenizer.tk(TokenEnum.SymbolParClose))
 			this.tokenizer.tkThrowErr(`Expected ")"`);
 
-		if (!this.tokenizer.tk(TokenEnum.SymbolCurlyBracketOpen))
-			this.tokenizer.tkThrowErr(`Expected "{"`);
-
 		const branch = this.branch() as FunctionExpressionNode;
 		branch.type = NodeType.FunctionExpression;
 		branch.id = id;
@@ -551,6 +548,7 @@ export default class TicoParser {
 			this.returnExpression() ||
 			this.ifExpression() ||
 			this.whileExpression() ||
+	private branch(): BranchNode {
 		const branch: BranchNode = {
 			type: NodeType.Branch,
 			parent: null,
@@ -561,6 +559,7 @@ export default class TicoParser {
 			column: 0
 		};
 
+		const singleExpression = this.tokenizer.tk(TokenEnum.SymbolCurlyBracketOpen) === null;
 		let ended = false;
 
 		while (true) {
@@ -574,21 +573,61 @@ export default class TicoParser {
 
 				branch.end = node.end;
 				branch.children.push(node);
-			} else {
-				if (!main) {
-					const closeBracket = this.tokenizer.tk(TokenEnum.SymbolCurlyBracketClose);
-					if (closeBracket) {
-						ended = true;
-						branch.end = closeBracket.end;
-						break;
-					}
-				} else {
+			} else if (this.tokenizer.tk("EOF")) {
+				break;
+			}
+			else {
+				this.tokenizer.tkThrowErr(
+					`Unexpected token [${this.tokenizer.currTk().match[0]}]`
+				);
+			}
+
+			if (singleExpression) {
+				ended = true;
+				break;
+			}
+			else {
+				if (this.tokenizer.tk(TokenEnum.SymbolCurlyBracketClose)) {
+					branch.end = node.end;
+					ended = true;
 					break;
 				}
 			}
 		}
 
-		if (!main && !ended) this.tokenizer.tkThrowErr(`Expected "}"`);
+		if (!ended) this.tokenizer.tkThrowErr(`Expected "}"`)
+
+		return branch;
+	}
+
+	private mainBranch(): BranchNode {
+		const branch: BranchNode = {
+			type: NodeType.Branch,
+			parent: null,
+			children: [],
+			start: 0,
+			end: 0,
+			line: 0,
+			column: 0
+		};
+
+		while (true) {
+			const node = this.expression();
+			if (node) {
+				if (branch.children.length === 0)
+					branch.start = node.start;
+
+				branch.end = node.end;
+				branch.children.push(node);
+			} else if (this.tokenizer.tk("EOF")) {
+				break;
+			}
+			else {
+				this.tokenizer.tkThrowErr(
+					`Unexpected token [${this.tokenizer.currTk().match[0]}]`
+				);
+			}
+		}
 
 		return branch;
 	}
@@ -597,19 +636,13 @@ export default class TicoParser {
 		this.tokenizer = new TicoTokenizer();
 		this.tokenizer.tokenize(source);
 
-		try {
-			const main = this.branch(true);
+		const main = this.mainBranch();
 
-			if (this.tokenizer.tokensLeft() > 0) {
-				this.tokenizer.tkThrowErr(`Unexpected token [${this.tokenizer.currTk().match[0]}]`);
-			}
-
-			return main;
-		} catch (e) {
-			console.dir(this.tokenizer.getTokens(), { depth: null });
-
-			throw e;
+		if (this.tokenizer.tokensLeft() > 1) {
+			this.tokenizer.tkThrowErr(`Unexpected token [${this.tokenizer.currTk().match[0]}]`);
 		}
+
+		return main;
 	}
 
 	public static stringify(node: Node, options: StringifyOptions = {}, treefyOptions: TreefyOptions = {}): string {
