@@ -181,35 +181,36 @@ export default class TicoParser {
 	private binaryExpressionRecursive(left: Node): Node {
 		const operators = [
 			// Binary
-			TokenEnum.BinaryOpStarStar,
+			[TokenEnum.BinaryOpStarStar],
 
-			TokenEnum.BinaryOpSlash,
-			TokenEnum.BinaryOpSlashSlash,
-
-			TokenEnum.BinaryOpModulus,
-			TokenEnum.BinaryOpModulusModulus,
-
+			[TokenEnum.BinaryOpSlash,
 			TokenEnum.BinaryOpStar,
+			TokenEnum.BinaryOpModulus],
+			
+			[TokenEnum.BinaryOpSlashSlash,
+			TokenEnum.BinaryOpModulusModulus],
 
-			TokenEnum.BinaryOpMinus,
-			TokenEnum.BinaryOpPlus,
+			[TokenEnum.BinaryOpPlus,
+			TokenEnum.BinaryOpMinus],
 
 			// Conditional
-			TokenEnum.ConditionalOpGreater,
+			[TokenEnum.ConditionalOpGreater,
 			TokenEnum.ConditionalOpLess,
 			TokenEnum.ConditionalOpGreaterEqual,
-			TokenEnum.ConditionalOpLessEqual,
-			TokenEnum.ConditionalOpEqual,
-			TokenEnum.ConditionalOpNotEqual,
-			TokenEnum.ConditionalAnd,
-			TokenEnum.ConditionalOr
+			TokenEnum.ConditionalOpLessEqual],
+
+			[TokenEnum.ConditionalOpEqual,
+			TokenEnum.ConditionalOpNotEqual],
+
+			[TokenEnum.ConditionalAnd,
+			TokenEnum.ConditionalOr],
 		];
 
-		/*if (operators.length !== (TokenEnum.BinaryOpMax - TokenEnum.BinaryOpMin) - 1)
-			throw new Error(`New binary operators added, update this function`)*/
-
 		const operator = (l: Node, id: number): Node => {
-			const op = this.tokenizer.tk(operators[id]);
+			let op = null;
+			for (const operator of operators[id]) {
+				op = op || this.tokenizer.tk(operator);
+			}
 			if (!op) { return l; }
 
 			const next = this.expressionMember();
@@ -231,29 +232,17 @@ export default class TicoParser {
 				column: l.column
 			} as BinaryExpressionNode;
 
-			node = operator(node, id);
-			/*for (let i = 0; i < operators.length; i++) {
+			for (let i = operators.length - 1; i > id; i--) {
 				node = operator(node, i);
-			}*/
+			}
+			node = operator(node, id);
 
 			return node;
 		}
 
 		let expr = left;
-		let before = left;
-		while (true) {
-			for (let i = 0; i < operators.length; i++) {
-				expr = operator(expr, i);
-			}
-			for (let i = 0; i < operators.length; i++) {
-				expr = operator(expr, i);
-			}
-			if (expr === before) {
-				break;
-			}
-			else {
-				before = expr;
-			}
+		for (let i = 0; i < operators.length; i++) {
+			expr = operator(expr, i);
 		}
 
 		if (expr === left) return null;
