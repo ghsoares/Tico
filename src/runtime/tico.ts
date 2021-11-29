@@ -6,7 +6,12 @@ import { foregroundReset, foreground, unescapeString, background, backgroundRese
 export enum NodeType {
 	Branch,
 	BinaryExpression,
-	ConditionalExpression,
+	//ConditionalExpression,
+	NegateExpression,
+	IfExpression,
+	ElseExpression,
+	WhileLoopExpression,
+	ForLoopExpression,
 	Literal,
 	Identifier,
 	Set,
@@ -40,11 +45,32 @@ export type BinaryExpressionNode = {
 	right: Node;
 } & Node;
 
-export type ConditionalExpressionNode = {
+/*export type ConditionalExpressionNode = {
 	left: Node;
 	operator: Token;
 	right: Node;
+} & Node;*/
+
+export type NegateExpressionNode = {
+	expr: Node;
 } & Node;
+
+export type IfExpressionNode = {
+	condition: Node;
+	next?: Node;
+} & BranchNode;
+
+export type ElseExpressionNode = {} & BranchNode;
+
+export type WhileLoopExpressionNode = {
+	condition: Node;
+} & BranchNode;
+
+export type ForLoopExpressionNode = {
+	init: Node;
+	condition: Node;
+	iterate: Node;
+} & BranchNode;
 
 export type LiteralNode = {
 	value: any;
@@ -81,12 +107,12 @@ export type FunctionCallNode = {
 	args: Node[];
 } & Node;
 
-type SetterGetterValue = {
+export type SetterGetterValue = {
 	set(val: any): void;
 	get(): any;
 };
 
-type FunctionValue = {
+export type FunctionValue = {
 	create(branch: BranchNode): void;
 	call(args: Node[]): any;
 };
