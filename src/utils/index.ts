@@ -227,3 +227,15 @@ export function unescapeString(str: string): string {
 
 	return str;
 }
+
+export function getType(v: any): string {
+	if (typeof v === 'object') {
+		if (v.constructor) {
+			return v.constructor.name;
+		}
+		return ({}).toString.call(v);
+	} else {
+		return typeof v;
+	}
+}
+
