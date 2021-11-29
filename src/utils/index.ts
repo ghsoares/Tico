@@ -221,22 +221,8 @@ export function unescapeString(str: string): string {
 
 	// Hexadecimal characters
 	str = str.replace(/\\x([0-9a-fA-F][0-9a-fA-F])/g, (match, d: string) => {
-		const hc1 = d.toUpperCase().charCodeAt(0);
-		const hc2 = d.toUpperCase().charCodeAt(1);
-		let res = 0;
 
-		if (hc1 >= 48 && hc1 <= 57) {
-			res += (hc1 - 48) * 16;
-		} else if (hc1 >= 65) {
-			res += (hc1 - 65 + 10) * 16;
-		}
-		if (hc2 >= 48 && hc2 <= 57) {
-			res += (hc2 - 48);
-		} else if (hc2 >= 65) {
-			res += (hc2 - 65 + 10);
-		}
-
-		return String.fromCharCode(res);
+		return String.fromCharCode(parseInt(d, 16));
 	});
 
 	return str;
