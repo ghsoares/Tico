@@ -227,6 +227,8 @@ export default class Tokenizer {
 	/**
 	 * Go back one pos of the token cursor
 	 */
+	public tkBack() { this.tokenCursor -= 1; }
+
 	/**
 	 * Returns the token position to the position provided
 	 * @param {number} pos - The position to return 
