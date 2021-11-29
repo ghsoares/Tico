@@ -56,6 +56,8 @@ export enum TokenEnum {
 	ConditionalOpLessEqual,
 	ConditionalOpEqual,
 	ConditionalOpNotEqual,
+	ConditionalAnd,
+	ConditionalOr,
 
 	ConditionalOpMax,
 
@@ -233,7 +235,7 @@ export default class TicoTokenizer extends Tokenizer {
 	}
 
 	private addConditionalOps(): void {
-		const expectedNumTokens = 6;
+		const expectedNumTokens = 8;
 		if (TokenEnum.ConditionalOpMax - TokenEnum.ConditionalOpMin - 1 !== expectedNumTokens) {
 			throw new Error(`New binary operators added, update this function`);
 		}
@@ -258,6 +260,12 @@ export default class TicoTokenizer extends Tokenizer {
 				} break;
 				case TokenEnum.ConditionalOpNotEqual: {
 					expressions = [/!=/];
+				} break;
+				case TokenEnum.ConditionalAnd: {
+					expressions = [/&&/];
+				} break;
+				case TokenEnum.ConditionalOr: {
+					expressions = [/\|\|/];
 				} break;
 				
 				default: throw new Error(`Not implemented`);
