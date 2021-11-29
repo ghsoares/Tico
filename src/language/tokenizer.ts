@@ -186,9 +186,9 @@ export default class Tokenizer {
 		this.init(str);
 		while (true) {
 			const tk = this.getNextToken();
-			if (tk.type === "EOF") break;
 			this.tokens.push(tk);
 			this.numTokens++;
+			if (tk.type === "EOF") break;
 		}
 	}
 
@@ -221,14 +221,6 @@ export default class Tokenizer {
 	 * @returns {Token} The current token
 	 */
 	public currTk(): Token {
-		if (this.tokenCursor >= this.numTokens) return {
-			type: "EOF",
-			match: null,
-			start: this.cursor - 1,
-			end: this.cursor - 1,
-			line: -1,
-			column: -1
-		};
 		return this.tokens[this.tokenCursor];
 	}
 
@@ -248,7 +240,7 @@ export default class Tokenizer {
 	 */
 	public tkThrowErr(msg: string) {
 		const currTk = this.currTk();
-		throw new SyntaxError(`At line ${currTk.line+1} column ${currTk.column+1}: ${msg}`);
+		throw new SyntaxError(`At line ${currTk.line + 1} column ${currTk.column + 1}: ${msg}`);
 	}
 
 	/**
