@@ -136,7 +136,7 @@ export default class TicoParser {
 		const expr = this.expression();
 
 		const parClose = this.tokenizer.tk(TokenEnum.SymbolParClose);
-		if (!parOpen)
+		if (!parClose)
 			this.tokenizer.tkThrowErr(`Expected ")"`);
 
 		if (!expr)
@@ -169,7 +169,9 @@ export default class TicoParser {
 		} as NegateExpressionNode;
 	}
 
+	private expressionMember(): Node {
 		return  this.negateExpression() ||
+				this.wrappedExpression() ||
 				this.literal()
 				;
 	}
@@ -442,7 +444,9 @@ export default class TicoParser {
 		} as ReturnExpressionNode;
 	}
 
+	private expression(): Node {
 		const expr = this.negateExpression() ||
+			this.wrappedExpression() ||
 			this.returnExpression() ||
 			this.ifExpression() ||
 			this.whileExpression() ||
