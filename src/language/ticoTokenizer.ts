@@ -22,6 +22,7 @@ export enum TokenEnum {
 	LiteralMin,
 
 	LiteralNumber,
+	LiteralBigInt,
 	LiteralString,
 	LiteralBoolean,
 
@@ -135,7 +136,7 @@ export default class TicoTokenizer extends Tokenizer {
 	}
 
 	private addLiterals(): void {
-		const expectedNumTokens = 3;
+		const expectedNumTokens = 4;
 		if (TokenEnum.LiteralMax - TokenEnum.LiteralMin - 1 !== expectedNumTokens) {
 			throw new Error(`New literals added, update this function`);
 		}
@@ -144,10 +145,23 @@ export default class TicoTokenizer extends Tokenizer {
 
 			switch (i) {
 				case TokenEnum.LiteralNumber: {
-					expressions = [/[-+]?\d+/];
+					expressions = [
+						/[+-]?\d+/,
+						/[+-]?\d+\.\d*/
+					];
+				} break;
+				case TokenEnum.LiteralBigInt: {
+					expressions = [
+						/([+-]?\d+)n/,
+						/BigInt\((.+)\)/,
+					];
 				} break;
 				case TokenEnum.LiteralString: {
-					expressions = [/"(.*?)"/, /'(.*?)'/];
+					expressions = [
+						/"(.*?)"/,
+						/'(.*?)'/,
+						/`(.*?)`/
+					];
 				} break;
 				case TokenEnum.LiteralBoolean: {
 					expressions = [/true|false/];
