@@ -128,14 +128,21 @@ export default class TicoProgram {
 
 	private evaluateExpression(branch: BranchNode, node: Node): any {
 		switch (node.type) {
+			case NodeType.Literal: {
+				return (node as LiteralNode).value;
+			}
 			case NodeType.BinaryExpression: {
 				return this.evaluateBinaryExpression(branch, node as BinaryExpressionNode);
 			}
-			case NodeType.ConditionalExpression: {
+			/*case NodeType.ConditionalExpression: {
 				return this.evaluateConditionalExpression(branch, node as ConditionalExpressionNode);
+			}*/
+			case NodeType.NegateExpression: {
+				return this.evaluateNegateExpression(branch, node as NegateExpressionNode);
 			}
-			case NodeType.Literal: {
-				return (node as LiteralNode).value;
+			case NodeType.IfExpression: {
+				return this.evaluateIfExpression(branch, node as IfExpressionNode);
+			}
 			}
 			case NodeType.Set: {
 				return this.evaluateSet(branch, node as SetNode);
@@ -246,6 +253,30 @@ export default class TicoProgram {
 			}
 			default: throw throwAtPos(operator.line, operator.column, `Not implemented`);
 		}
+	private evaluateNegateExpression(branch: BranchNode, node: NegateExpressionNode): any {
+		return !this.evaluateExpression(branch, node.expr);
+	}
+
+	private evaluateIfExpression(branch: BranchNode, node: IfExpressionNode): any {
+		const isTrue = this.evaluateExpression(branch, node.condition);
+
+		if (isTrue) {
+			node.parent = branch;
+			node.functions = {};
+			node.variables = {};
+			return this.runBranch(node);
+		} else if (node.next) {
+			if (node.next.type === NodeType.ElseExpression) {
+				const elseNode = node.next as ElseExpressionNode;
+				elseNode.parent = branch;
+				elseNode.functions = {};
+				elseNode.variables = {};
+				return this.runBranch(elseNode);
+			} else if (node.next.type === NodeType.IfExpression) {
+				return this.evaluateExpression(branch, node.next as IfExpressionNode)
+			}
+		}
+	}
 	}
 
 	private evaluateSet(branch: BranchNode, node: SetNode): any {
