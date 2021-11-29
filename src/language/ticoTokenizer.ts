@@ -7,7 +7,6 @@ export enum TokenEnum {
 	IgnoreMultilineComment,
 	IgnoreComment,
 	IgnoreWhitespace,
-	IgnoreSemicolon,
 
 	IgnoreMax,
 
