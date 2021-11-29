@@ -9,8 +9,8 @@ import {
 	FunctionExpressionNode,
 	FunctionCallNode,
 	FunctionArgNode,
-	ConditionalExpressionNode,
-	ReturnExpressionNode
+	IfExpressionNode,
+	ElseExpressionNode,
 } from "../runtime/tico";
 import { treefy, TreefyOptions } from "../utils";
 import TicoTokenizer, { TokenEnum } from "./ticoTokenizer";
@@ -213,19 +213,78 @@ export default class TicoParser {
 		if (!right) { return this.tokenizer.tkRet(tkPos); }
 
 		return right;
-	}
-
-	private conditionalExpression(): Node {
+	private ifExpression(): Node {
 		const tkPos = this.tokenizer.tkCursor();
 
-		const expr = () => {
-			return this.variableSet() 			||
-					this.functionExpression() 	||
-					this.binaryExpression();
+		const ifKey = this.tokenizer.tk(TokenEnum.KeywordIf);
+		if (!ifKey) { return this.tokenizer.tkRet(tkPos); }
+
+		const expr = this.expression();
+		if (!expr)
+			this.tokenizer.tkThrowErr("Expected expression");
+
+		const branch = this.branch() as IfExpressionNode;
+
+		branch.type = NodeType.IfExpression;
+		branch.condition = expr;
+		branch.start = ifKey.start;
+		branch.line = ifKey.line;
+		branch.column = ifKey.column;
+
+		if (this.tokenizer.tk(TokenEnum.KeywordElse)) {
+			this.tokenizer.tkBack();
+			branch.next = this.elseExpression();
+		} else if (this.tokenizer.tk(TokenEnum.KeywordElif)) {
+			this.tokenizer.tkBack();
+			branch.next = this.elifExpression();
 		}
 
-		const leftExpr = expr();
-		if (!leftExpr) { return this.tokenizer.tkRet(tkPos); }
+		return branch;
+	}
+
+	private elseExpression() {
+		const tkPos = this.tokenizer.tkCursor();
+
+		const elseKey = this.tokenizer.tk(TokenEnum.KeywordElse);
+		if (!elseKey) { return this.tokenizer.tkRet(tkPos); }
+
+		const branch = this.branch() as ElseExpressionNode;
+
+		branch.type = NodeType.ElseExpression;
+		branch.start = elseKey.start;
+		branch.line = elseKey.line;
+		branch.column = elseKey.column;
+
+		return branch;
+	}
+
+	private elifExpression() {
+		const tkPos = this.tokenizer.tkCursor();
+
+		const elifKey = this.tokenizer.tk(TokenEnum.KeywordElif);
+		if (!elifKey) { return this.tokenizer.tkRet(tkPos); }
+
+		const expr = this.expression();
+		if (!expr)
+			this.tokenizer.tkThrowErr("Expected expression");
+
+		const branch = this.branch() as IfExpressionNode;
+
+		branch.type = NodeType.IfExpression;
+		branch.condition = expr;
+		branch.start = elifKey.start;
+		branch.line = elifKey.line;
+		branch.column = elifKey.column;
+
+		if (this.tokenizer.tk(TokenEnum.KeywordElse)) {
+			branch.next = this.elseExpression();
+		} else if (this.tokenizer.tk(TokenEnum.KeywordElif)) {
+			this.tokenizer.tkBack();
+			branch.next = this.elifExpression();
+		}
+
+		return branch;
+	}
 
 		const operator = this.tokenizer.tk(TokenEnum.ConditionalOpGreater) ||
 			this.tokenizer.tk(TokenEnum.ConditionalOpLess) ||
@@ -365,7 +424,7 @@ export default class TicoParser {
 		} as ReturnExpressionNode;
 	}
 
-	private branch(main: boolean = false): BranchNode {
+			this.ifExpression() ||
 		const branch: BranchNode = {
 			type: NodeType.Branch,
 			parent: null,
@@ -381,6 +440,7 @@ export default class TicoParser {
 		while (true) {
 			const node = this.variableSet() ||
 				this.functionExpression() ||
+				this.ifExpression() ||
 				this.expression();
 			if (node) {
 				if (branch.children.length === 0)
@@ -464,6 +524,36 @@ export default class TicoParser {
 					tree['left'] = getTree(nd.left);
 					tree['operator'] = nd.operator.match[0];
 					tree['right'] = getTree(nd.right);
+				case NodeType.IfExpression: {
+					const nd = n as IfExpressionNode;
+
+					tree['title'] = "IfExpressionNode";
+					if (showPosition) tree['position'] = position();
+
+					tree['condition'] = getTree(nd.condition);
+					if (nd.children.length === 0) {
+						tree['scope'] = 'empty';
+					} else {
+						tree['scope'] = nd.children.map(c => getTree(c));
+					}
+					if (nd.next) {
+						tree['next'] = getTree(nd.next);
+					} else {
+						tree['next'] = 'empty';
+					}
+				} break;
+				case NodeType.ElseExpression: {
+					const nd = n as ElseExpressionNode;
+
+					tree['title'] = "ElseExpressionNode";
+					if (showPosition) tree['position'] = position();
+
+					if (nd.children.length === 0) {
+						tree['scope'] = 'empty';
+					} else {
+						tree['scope'] = nd.children.map(c => getTree(c));
+					}
+				} break;
 				} break;
 				case NodeType.Literal: {
 					const nd = n as LiteralNode;
