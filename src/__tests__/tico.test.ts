@@ -110,6 +110,11 @@ describe('testing tico parser', () => {
 				const program = TicoProgram.fromSourceCode("35 * 10 + 75 * 20");
 				expect(program.run()).toBe(1850);
 			});
+
+			test('3 * 3 + 3 - 3 * 3 + 3', () => {
+				const program = TicoProgram.fromSourceCode("3 * 3 + 3 - 3 * 3 + 3");
+				expect(program.run()).toBe(6);
+			});
 		});
 
 		describe('Function expressions', () => {

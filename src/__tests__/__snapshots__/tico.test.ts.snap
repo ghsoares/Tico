@@ -106,5 +106,5 @@ exports[`testing tico parser Parses binary operators Unsigned modulus 1`] = `
 
 exports[`testing tico parser Parses empty string 1`] = `
 "BranchNode
-└──scope"
+└──scope: \\"empty\\""
 `;
