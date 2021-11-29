@@ -10,6 +10,7 @@ import {
 	FunctionCallNode,
 	FunctionArgNode,
 	ReturnExpressionNode,
+	NegateExpressionNode,
 	IfExpressionNode,
 	ElseExpressionNode,
 } from "../runtime/tico";
@@ -141,16 +142,28 @@ export default class TicoParser {
 		return expr;
 	}
 
-	private expressionMember(): Node {
-		return this.literal() || this.wrappedExpression() || this.functionCall() || this.identifier();
+	private negateExpression(): Node {
+		const tkPos = this.tokenizer.tkCursor();
+
+		const negate = this.tokenizer.tk(TokenEnum.SymbolExclamationMark);
+		if (!negate)
+			return this.tokenizer.tkRet(tkPos);
+
+		const expr = this.expression();
+		if (!expr)
+			this.tokenizer.tkThrowErr(`Expected expression`);
+
+		return {
+			type: NodeType.NegateExpression,
+			expr,
+			start: negate.start,
+			end: expr.end,
+			line: negate.line,
+			column: negate.column
+		} as NegateExpressionNode;
 	}
 
-	private expression(): Node {
-		return 	this.variableSet() 				||
-				this.functionExpression() 		||
-				this.returnExpression()			||
-				this.conditionalExpression() 	||
-				this.binaryExpression();
+		return  this.negateExpression() ||
 	}
 
 	private binaryExpressionRecursive(left: Node): Node {
@@ -425,6 +438,7 @@ export default class TicoParser {
 		} as ReturnExpressionNode;
 	}
 
+		const expr = this.negateExpression() ||
 			this.returnExpression() ||
 			this.ifExpression() ||
 		const branch: BranchNode = {
@@ -526,6 +540,14 @@ export default class TicoParser {
 					tree['left'] = getTree(nd.left);
 					tree['operator'] = nd.operator.match[0];
 					tree['right'] = getTree(nd.right);
+				case NodeType.NegateExpression: {
+					const nd = n as NegateExpressionNode;
+
+					tree['title'] = "NegateExpressionNode";
+					if (showPosition) tree['position'] = position();
+
+					tree['expr'] = getTree(nd.expr);
+				} break;
 				case NodeType.IfExpression: {
 					const nd = n as IfExpressionNode;
 
