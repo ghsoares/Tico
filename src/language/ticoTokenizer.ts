@@ -102,11 +102,6 @@ export default class TicoTokenizer extends Tokenizer {
 			/[\s\n\r]+/,
 			true
 		);
-		this.addTokenDefinition(
-			TokenEnum.IgnoreSemicolon,
-			/;/,
-			true
-		);
 
 		this.addKeywords();
 		this.addLiterals();
