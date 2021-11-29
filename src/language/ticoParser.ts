@@ -547,9 +547,19 @@ export default class TicoParser {
 	private expression(): Node {
 		const expr = this.negateExpression() ||
 			this.wrappedExpression() ||
+			this.variableSet() ||
+			this.functionExpression() ||
 			this.returnExpression() ||
 			this.ifExpression() ||
 			this.whileExpression() ||
+			//this.conditionalExpression() ||
+			this.binaryExpression() ||
+			this.expressionMember();
+
+		this.tokenizer.tk(TokenEnum.SymbolSemicolon);
+		return expr;
+	}
+
 	private branch(): BranchNode {
 		const branch: BranchNode = {
 			type: NodeType.Branch,
