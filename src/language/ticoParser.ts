@@ -629,7 +629,11 @@ export default class TicoParser {
 					tree['title'] = "BranchNode";
 					if (showPosition) tree['position'] = position();
 
-					tree['scope'] = nd.children.map(c => getTree(c));
+					if (nd.children.length === 0) {
+						tree['scope'] = 'empty';
+					} else {
+						tree['scope'] = nd.children.map(c => getTree(c));
+					}
 				} break;
 				case NodeType.BinaryExpression: {
 					const nd = n as BinaryExpressionNode;
@@ -745,7 +749,11 @@ export default class TicoParser {
 
 					tree['id'] = getTree(nd.id);
 					tree['args'] = nd.args.map(arg => getTree(arg));
-					tree['scope'] = nd.children.map(c => getTree(c));
+					if (nd.children.length === 0) {
+						tree['scope'] = 'empty';
+					} else {
+						tree['scope'] = nd.children.map(c => getTree(c));
+					}
 				} break;
 				case NodeType.ReturnExpression: {
 					const nd = n as ReturnExpressionNode;
