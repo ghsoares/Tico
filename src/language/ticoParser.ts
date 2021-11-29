@@ -27,10 +27,12 @@ export default class TicoParser {
 	private tokenizer: TicoTokenizer;
 
 	private literal(): Node {
-		const literal = this.tokenizer.tk(TokenEnum.LiteralNumber) ||
-						this.tokenizer.tk(TokenEnum.LiteralString) ||
-						this.tokenizer.tk(TokenEnum.LiteralBoolean)
-						;
+		const literal = 
+			this.tokenizer.tk(TokenEnum.LiteralNumber) ||
+			this.tokenizer.tk(TokenEnum.LiteralBigInt) ||
+			this.tokenizer.tk(TokenEnum.LiteralString) ||
+			this.tokenizer.tk(TokenEnum.LiteralBoolean)
+			;
 
 		let val: any = null;
 
@@ -38,6 +40,9 @@ export default class TicoParser {
 			switch (literal.type) {
 				case TokenEnum.LiteralNumber: {
 					val = Number(literal.match[0]);
+				} break;
+				case TokenEnum.LiteralBigInt: {
+					val = BigInt(literal.match[1]);
 				} break;
 				case TokenEnum.LiteralString: {
 					val = String(literal.match[1]);
@@ -165,6 +170,8 @@ export default class TicoParser {
 	}
 
 		return  this.negateExpression() ||
+				this.literal()
+				;
 	}
 
 	private binaryExpressionRecursive(left: Node): Node {
