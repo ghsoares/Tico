@@ -1,7 +1,7 @@
 import TicoParser from "../language/ticoParser";
 import { TokenEnum } from "../language/ticoTokenizer";
 import { throwAtPos, Token } from "../language/tokenizer";
-import { foregroundReset, colorfy, foreground, unescapeString, background, backgroundReset } from "../utils";
+import { foregroundReset, foreground, unescapeString, background, backgroundReset } from "../utils";
 
 export enum NodeType {
 	Branch,
