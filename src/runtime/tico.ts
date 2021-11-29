@@ -235,11 +235,72 @@ export default class TicoProgram {
 				
 				return ((leftValue % rightValue) + rightValue) % rightValue;
 			}
+
+			// Conditional
+			case TokenEnum.ConditionalOpGreater: {
+				const greaterOverload = leftValue['greater'] || rightValue['greater'];
+				if (greaterOverload)
+					return greaterOverload(leftValue, rightValue);
+
+				return leftValue > rightValue;
+			}
+			case TokenEnum.ConditionalOpLess: {
+				const lesserOverload = leftValue['lesser'] || rightValue['lesser'];
+				if (lesserOverload)
+					return lesserOverload(leftValue, rightValue);
+				
+				return leftValue < rightValue;
+			}
+			case TokenEnum.ConditionalOpGreaterEqual: {
+				const greaterOverload = leftValue['greater'] || rightValue['greater'];
+				const equalsOverload = leftValue['equals'] || rightValue['equals'];
+				if (greaterOverload && equalsOverload)
+					return greaterOverload(leftValue, rightValue) || equalsOverload(leftValue, rightValue);
+				
+				return leftValue >= rightValue;
+			}
+			case TokenEnum.ConditionalOpLessEqual: {
+				const lesserOverload = leftValue['lesser'] || rightValue['lesser'];
+				const equalsOverload = leftValue['equals'] || rightValue['equals'];
+				if (lesserOverload && equalsOverload)
+					return lesserOverload(leftValue, rightValue) || equalsOverload(leftValue, rightValue);
+				
+				return leftValue <= rightValue;
+			}
+			case TokenEnum.ConditionalOpEqual: {
+				const equalsOverload = leftValue['equals'] || rightValue['equals'];
+				if (equalsOverload)
+					return equalsOverload(leftValue, rightValue);
+				
+				return leftValue === rightValue;
+			}
+			case TokenEnum.ConditionalOpNotEqual: {
+				const equalsOverload = leftValue['equals'] || rightValue['equals'];
+				if (equalsOverload)
+					return !equalsOverload(leftValue, rightValue);
+				
+				return leftValue !== rightValue;
+			}
+			case TokenEnum.ConditionalAnd: {
+				const andOverload = leftValue['and'] || rightValue['and'];
+				if (andOverload)
+					return !andOverload(leftValue, rightValue);
+				
+				return leftValue && rightValue;
+			}
+			case TokenEnum.ConditionalOr: {
+				const orOverload = leftValue['or'] || rightValue['or'];
+				if (orOverload)
+					return !orOverload(leftValue, rightValue);
+				
+				return leftValue || rightValue;
+			}
+
 			default: throw throwAtPos(operator.line, operator.column, `Not implemented`);
 		}
 	}
 
-	private evaluateConditionalExpression(branch: BranchNode, node: ConditionalExpressionNode): boolean {
+	/*private evaluateConditionalExpression(branch: BranchNode, node: ConditionalExpressionNode): any {
 		const { left, operator, right } = node;
 
 		let leftValue: any = this.evaluateExpression(branch, left);
@@ -247,37 +308,67 @@ export default class TicoProgram {
 
 		switch (operator.type) {
 			case TokenEnum.ConditionalOpGreater: {
-				if (leftValue['greater'])
-					return leftValue.greater(rightValue);
+				const greaterOverload = leftValue['greater'] || rightValue['greater'];
+				if (greaterOverload)
+					return greaterOverload(leftValue, rightValue);
+
 				return leftValue > rightValue;
 			}
 			case TokenEnum.ConditionalOpLess: {
-				if (leftValue['less'])
-					return leftValue.less(rightValue);
+				const lesserOverload = leftValue['lesser'] || rightValue['lesser'];
+				if (lesserOverload)
+					return lesserOverload(leftValue, rightValue);
+				
 				return leftValue < rightValue;
 			}
 			case TokenEnum.ConditionalOpGreaterEqual: {
-				if (leftValue['greater'] && leftValue['equal'])
-					return leftValue.greater(rightValue) || leftValue.equal(rightValue);
+				const greaterOverload = leftValue['greater'] || rightValue['greater'];
+				const equalsOverload = leftValue['equals'] || rightValue['equals'];
+				if (greaterOverload && equalsOverload)
+					return greaterOverload(leftValue, rightValue) || equalsOverload(leftValue, rightValue);
+				
 				return leftValue >= rightValue;
 			}
 			case TokenEnum.ConditionalOpLessEqual: {
-				if (leftValue['less'] && leftValue['equal'])
-					return leftValue.less(rightValue) || leftValue.equal(rightValue);
+				const lesserOverload = leftValue['lesser'] || rightValue['lesser'];
+				const equalsOverload = leftValue['equals'] || rightValue['equals'];
+				if (lesserOverload && equalsOverload)
+					return lesserOverload(leftValue, rightValue) || equalsOverload(leftValue, rightValue);
+				
 				return leftValue <= rightValue;
 			}
 			case TokenEnum.ConditionalOpEqual: {
-				if (leftValue['equal'])
-					return leftValue.equal(rightValue);
+				const equalsOverload = leftValue['equals'] || rightValue['equals'];
+				if (equalsOverload)
+					return equalsOverload(leftValue, rightValue);
+				
 				return leftValue === rightValue;
 			}
 			case TokenEnum.ConditionalOpNotEqual: {
-				if (leftValue['equal'])
-					return !leftValue.equal(rightValue);
+				const equalsOverload = leftValue['equals'] || rightValue['equals'];
+				if (equalsOverload)
+					return !equalsOverload(leftValue, rightValue);
+				
 				return leftValue !== rightValue;
+			}
+			case TokenEnum.ConditionalAnd: {
+				const andOverload = leftValue['and'] || rightValue['and'];
+				if (andOverload)
+					return !andOverload(leftValue, rightValue);
+				
+				return leftValue && rightValue;
+			}
+			case TokenEnum.ConditionalOr: {
+				const orOverload = leftValue['or'] || rightValue['or'];
+				if (orOverload)
+					return !orOverload(leftValue, rightValue);
+				
+				return leftValue || rightValue;
 			}
 			default: throw throwAtPos(operator.line, operator.column, `Not implemented`);
 		}
+	}*/
+
 	private evaluateNegateExpression(branch: BranchNode, node: NegateExpressionNode): any {
 		return !this.evaluateExpression(branch, node.expr);
 	}
