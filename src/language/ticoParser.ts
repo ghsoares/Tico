@@ -9,6 +9,7 @@ import {
 	FunctionExpressionNode,
 	FunctionCallNode,
 	FunctionArgNode,
+	ReturnExpressionNode,
 	IfExpressionNode,
 	ElseExpressionNode,
 } from "../runtime/tico";
@@ -424,6 +425,7 @@ export default class TicoParser {
 		} as ReturnExpressionNode;
 	}
 
+			this.returnExpression() ||
 			this.ifExpression() ||
 		const branch: BranchNode = {
 			type: NodeType.Branch,
