@@ -1,9 +1,10 @@
 import TicoTokenizer from "./src/language/ticoTokenizer.js";
 import TicoParser from "./src/language/ticoParser.js";
 import TicoProgram from "./src/runtime/tico.js";
+import { Worker } from "worker_threads";
 
 function createWorker() {
-	return new Worker('./src/webWorker.js', { type: 'module' });
+	return new Worker('./src/webWorker.js');
 }
 
 export {

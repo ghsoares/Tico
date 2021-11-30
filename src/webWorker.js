@@ -64,34 +64,21 @@ function compileAndRun(source, ctxVariables,ctxFunctions) {
 	runProgram(compileSource(source), ctxVariables, ctxFunctions);
 }
 
-self.onmessage = (e) => {
-	switch (e.type) {
-		case 'COMPILE_SOURCE': {
-			compileSource(e.source);
-		} break;
-		case 'RUN_PROGRAM': {
-			runProgram(e.main, e.ctxVariables, e.ctxFunctions);
-		} break;
-		case 'COMPILE_AND_RUN': {
-			compileAndRun(e.source, e.ctxVariables, e.ctxFunctions);
-		} break;
+const WebWorker = () => {
+	self.onmessage = (e) => {
+		switch (e.type) {
+			case 'COMPILE_SOURCE': {
+				compileSource(e.source);
+			} break;
+			case 'RUN_PROGRAM': {
+				runProgram(e.main, e.ctxVariables, e.ctxFunctions);
+			} break;
+			case 'COMPILE_AND_RUN': {
+				compileAndRun(e.source, e.ctxVariables, e.ctxFunctions);
+			} break;
+		}
 	}
 }
-/*
 
-self.onmessage = (e: any) => {
-	const { type } = e;
+export default WebWorker;
 
-	switch (type) {
-		case 'COMPILE_SOURCE': {
-			compileSource(e.source);
-		} break;
-		case 'RUN_PROGRAM': {
-			runProgram(e.main, e.ctxVariables, e.ctxFunctions);
-		} break;
-		case 'COMPILE_AND_RUN': {
-			compileAndRun(e.source, e.ctxVariables, e.ctxFunctions);
-		} break;
-	}
-}
-*/
