@@ -1,6 +1,6 @@
 # Tico programming language
 
-Tico is dynamic procedural programming language, similar to JS with some abstraction of Python's features and exclusive features.
+Tico is a dynamic procedural programming language, similar to JS with some abstraction of Python's features and exclusive features.
 The language is written in Typescript, both compilation and runtime.
 
 ## Dynamic
