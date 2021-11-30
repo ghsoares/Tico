@@ -2,7 +2,7 @@
   "name": "ticojs",
   "version": "1.0.0",
   "description": "",
-  "main": "src/index.js",
+  "main": "index.js",
   "scripts": {
     "dev": "doskey /listsize=0 && nodemon",
     "test": "jest --watch"
