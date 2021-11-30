@@ -32,3 +32,4 @@ declare class TicoParser {
 	public static stringify(node: Object, options: Object, treefyOptions: TreefyOptions): TicoProgram;
 }
 
+export default TicoParser;
