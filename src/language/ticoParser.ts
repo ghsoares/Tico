@@ -278,9 +278,15 @@ export default class TicoParser {
 		const ifKey = this.tokenizer.tk(TokenEnum.KeywordIf);
 		if (!ifKey) { return this.tokenizer.tkRet(tkPos); }
 
+		if (!this.tokenizer.tk(TokenEnum.SymbolParOpen))
+			this.tokenizer.tkThrowErr(`Expected "("`);
+
 		const expr = this.expression();
 		if (!expr)
 			this.tokenizer.tkThrowErr("Expected expression");
+		
+		if (!this.tokenizer.tk(TokenEnum.SymbolBracketClose))
+			this.tokenizer.tkThrowErr(`Expected ")"`);
 
 		const branch = this.branch() as IfExpressionNode;
 
@@ -323,9 +329,15 @@ export default class TicoParser {
 		const elifKey = this.tokenizer.tk(TokenEnum.KeywordElif);
 		if (!elifKey) { return this.tokenizer.tkRet(tkPos); }
 
+		if (!this.tokenizer.tk(TokenEnum.SymbolParOpen))
+			this.tokenizer.tkThrowErr(`Expected "("`);
+
 		const expr = this.expression();
 		if (!expr)
 			this.tokenizer.tkThrowErr("Expected expression");
+
+		if (!this.tokenizer.tk(TokenEnum.SymbolParClose))
+			this.tokenizer.tkThrowErr(`Expected ")"`);
 
 		const branch = this.branch() as IfExpressionNode;
 
@@ -345,15 +357,21 @@ export default class TicoParser {
 		return branch;
 	}
 
-	private whileExpression() {
+	private whileLoopExpression() {
 		const tkPos = this.tokenizer.tkCursor();
 
 		const whileKey = this.tokenizer.tk(TokenEnum.KeywordWhile);
 		if (!whileKey) { return this.tokenizer.tkRet(tkPos); }
 
+		if (!this.tokenizer.tk(TokenEnum.SymbolParOpen))
+			this.tokenizer.tkThrowErr(`Expected "("`);
+
 		const expr = this.expression();
 		if (!expr)
 			this.tokenizer.tkThrowErr("Expected expression");
+
+		if (!this.tokenizer.tk(TokenEnum.SymbolParClose))
+			this.tokenizer.tkThrowErr(`Expected ")"`);
 
 		const branch = this.branch() as WhileLoopExpressionNode;
 
