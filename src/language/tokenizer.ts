@@ -256,4 +256,6 @@ export default class Tokenizer {
 	 * @returns {Token[]} The array of tokens copy
 	 */
 	public getTokens(): Token[] { return [...this.tokens]; }
+
+	public sourceSubstr(start: number, end: number): string { return this.source.slice(start, end); }
 }

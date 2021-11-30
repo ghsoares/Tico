@@ -20,6 +20,7 @@ export enum TokenEnum {
 	KeywordElif,
 	KeywordWhile,
 	KeywordFor,
+	KeywordBreak,
 
 	KeywordMax,
 
@@ -30,6 +31,8 @@ export enum TokenEnum {
 	LiteralBigInt,
 	LiteralString,
 	LiteralBoolean,
+	LiteralNull,
+	LiteralUndefined,
 
 	LiteralMax,
 
@@ -114,7 +117,7 @@ export default class TicoTokenizer extends Tokenizer {
 	}
 
 	private addKeywords(): void {
-		const expectedNumTokens = 7;
+		const expectedNumTokens = 8;
 		if (TokenEnum.KeywordMax - TokenEnum.KeywordMin - 1 !== expectedNumTokens) {
 			throw new Error(`New keywords added, update this function`);
 		}
@@ -143,6 +146,9 @@ export default class TicoTokenizer extends Tokenizer {
 				case TokenEnum.KeywordFor: {
 					expressions = [/for/];
 				} break;
+				case TokenEnum.KeywordBreak: {
+					expressions = [/break/];
+				} break;
 				default: throw new Error(`Not implemented`);
 			}
 
@@ -153,7 +159,7 @@ export default class TicoTokenizer extends Tokenizer {
 	}
 
 	private addLiterals(): void {
-		const expectedNumTokens = 4;
+		const expectedNumTokens = 6;
 		if (TokenEnum.LiteralMax - TokenEnum.LiteralMin - 1 !== expectedNumTokens) {
 			throw new Error(`New literals added, update this function`);
 		}
@@ -182,6 +188,12 @@ export default class TicoTokenizer extends Tokenizer {
 				} break;
 				case TokenEnum.LiteralBoolean: {
 					expressions = [/true|false/];
+				} break;
+				case TokenEnum.LiteralNull: {
+					expressions = [/null/];
+				} break;
+				case TokenEnum.LiteralUndefined: {
+					expressions = [/undefined/];
 				} break;
 				default: throw new Error(`Not implemented`);
 			}

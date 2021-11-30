@@ -10,6 +10,7 @@ type Color = [number, number, number];
 
 export type TreefyOptions = {
 	colors?: boolean;
+	indentSize?: number;
 
 	// Tree colors
 	arrowsColor?: [Color, Color];
@@ -26,6 +27,7 @@ export type TreefyOptions = {
 export function treefy(tree: Object, options: TreefyOptions = {}): string {
 	const {
 		colors 		 =	true,
+		indentSize	 = 	2,
 		titleColor 	 = 	[fromHex("#00ff7f"), fromHex(null)],
 		keyColor 	 = 	[fromHex("#33daff"), fromHex(null)],
 		arrowsColor  = 	[fromHex("#ffffff"), fromHex(null)],
@@ -38,12 +40,24 @@ export function treefy(tree: Object, options: TreefyOptions = {}): string {
 	const applyColor = (str: string, c: [Color, Color]) => colors ? colorfy(str, c[0], c[1]) : str;
 	
 	const arrows = [
-		applyColor("├──", arrowsColor),
-		applyColor("└──", arrowsColor),
-		applyColor("│", arrowsColor)
+		applyColor("├", arrowsColor),
+		applyColor("└", arrowsColor),
+		applyColor("│", arrowsColor),
+		applyColor("─".repeat(indentSize), arrowsColor)
 	];
+	const arrow = (type: number): string => {
+		switch (type) {
+			case 0:
+				return arrows[0] + arrows[3];
+			case 1:
+				return arrows[1] + arrows[3];
+			case 2:
+				return arrows[2];
+		}
+		return null;
+	}
 
-	const indent = (lvl: number) => "   ".repeat(lvl);
+	const indent = (lvl: number) => " ".repeat(lvl * (indentSize + 1));
 
 	const connect = (str: string, lvl: number, skipFirst: boolean = false): string => {
 		const lines = str.split("\n");
@@ -51,8 +65,8 @@ export function treefy(tree: Object, options: TreefyOptions = {}): string {
 		return lines.map((line, idx) => {
 			if (skipFirst && idx === 0) return line;
 			if (idx < lines.length - 1) {
-				const p = lvl * 3;
-				line = line.slice(0, p) + arrows[2] + line.slice(p + 1);
+				const p = lvl * (indentSize + 1);
+				line = line.slice(0, p) + arrow(2) + line.slice(p + 1);
 			}
 			return line;
 		}).join("\n");
@@ -73,9 +87,9 @@ export function treefy(tree: Object, options: TreefyOptions = {}): string {
 			const v = obj[k];
 
 			if (i < numKeys - 1) {
-				str += indent(lvl) + arrows[0];
+				str += indent(lvl) + arrow(0);
 			} else {
-				str += indent(lvl) + arrows[1];
+				str += indent(lvl) + arrow(1);
 			}
 
 			if (typeof v === 'object') {
@@ -88,9 +102,9 @@ export function treefy(tree: Object, options: TreefyOptions = {}): string {
 					for (let j = 0; j < len; j++) {
 						let ss = indent(lvl + 1);
 						if (j < len - 1) {
-							ss += arrows[0];
+							ss += arrow(0);
 						} else {
-							ss += arrows[1];
+							ss += arrow(1);
 						}
 
 						ss += treefyRec(v[j], lvl + 2);
@@ -108,7 +122,7 @@ export function treefy(tree: Object, options: TreefyOptions = {}): string {
 
 					str += sss;
 				} else {
-					let ss = indent(lvl + 1) + arrows[1];
+					let ss = indent(lvl + 1) + arrow(1);
 					ss += treefyRec(v, lvl + 2);
 					
 					if (i < numKeys - 1) {
