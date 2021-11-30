@@ -1,53 +1,46 @@
-/*
-args:
-	digits: number of digits to compute pi
-*/
+# Based on: https://www.w3resource.com/projects/python/python-projects-1.php
 
-func get_pi start
-	q 1n set
-	r 0n set
-	t 1n set
-	k 1n set
-	n 3n set
-	l 3n set
- 
-	0
+function calcPi(limit) {
+	q = 1n;
+	r = 0n;
+	t = 1n;
+	k = 1n;
+	n = 3n;
+	l = 3n;
 
-	loop start
-		4n q get * r get + t get -
-		n get t get *
-		<
-		dup if start
-			n get dump
+	decimal = limit;
+	counter = 0;
 
-			stack
+	while (counter != decimal + 1) {
+		if (4n * q + r - t < n * t) {
+			write(n);
+			if (counter == 0) write(".");
 
-			dup 2 over > if break
-			dup 0 == if start
-				"." dump
-			end
+			if (decimal == counter) {
+				break;
+			}
 
-			1 +
-			nr 10n r get n get t get * - * set
+			counter = counter + 1;
 
-			n 10n 3n q get * r get + * t get / 10n n get * - set
-			q q get 10n * set
-			r nr get set
-		end
-		not if start
-			nr 2n q get * r get + l get * set
-			nn q get 7n k get * * 2n + r get l get * + t get l get * / set
-			q q get k get * set
-			t t get l get * set
-			l l get 2n + set
-			k k get 1n + set
-			n nn get set
-			r nr get set
-		end
-	end
-end
+			nr = 10n * (r - n * t);
+			n = ((10n * (3n * q + r)) / t) - 10n * n;
+			q = q * 10n;
+			r = nr;
+		} else {
+			nr = (2n * q + r) * l;
+			nn = (q * (7n * k) + 2n + (r * l)) / (t * l);
+			q = q * k;
+			t = t * l;
+			l = l + 2n;
+			k = k + 1n;
+			n = nn;
+			r = nr;
+		}
+	}
+}
 
-"Computing " digits get + " digits of PI:\n\n" + dump
+calcPi(digits || 1000);
+write("\n")
 
-digits get get_pi call
-"\n" dump
+
+

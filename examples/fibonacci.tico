@@ -1,32 +1,38 @@
-/*
-args:
-	count: number of numbers in fibonacci sequence
-*/
+function getFibonacci(n) {
+	if (n <= 1) {
+		return n;
+	}
 
-func fibonacci start
-	dup 1 >
-	if start
-		dup 1 - fibonacci call
-		rev 2 - fibonacci call
-		+
-	end
-end
+	first = 0;
+	second = 1;
+	nth = 1;
 
-"Computing " count get + " numbers of fibonacci sequence:\n\n" + dump
+	i = 2;
+	while (i <= n) {
+		nth = first + second;
+		first = second;
+		second = nth;
 
-count get
-0
+		i = i + 1;
+	}
 
-loop start
-	dup 2 over > if break
+	return nth;
+}
 
-	dup 0 > if start ", " dump end
-	dup fibonacci call dump
+function fibonacci(n) {
+	i = 0;
 
-	1 +
-end
+	while (i <= n) {
+		write(getFibonacci(i) + " ");
 
-drop
-drop
+		i = i + 1;
+	}
+}
 
-"\n" dump
+fibonacci(count || 100);
+
+write("\n");
+
+
+
+

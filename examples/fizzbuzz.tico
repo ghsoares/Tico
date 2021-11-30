@@ -1,40 +1,28 @@
-/*
-args:
-	count: count of numbers to print either "Fizz", "Buzz" or "FizzBuzz"
-*/
+i = 1;
+max = max || 1000;
 
-func fizzbuzz start
-	max rev set
-	i 1 set
+while (i <= max) {
+	div3 = i % 3 == 0;
+	div5 = i % 5 == 0;
 
-	loop start
-		i get 1 > if start
-			", " dump
-		end
+	if (div3) {
+		write("Fizz");
+	}
+	if (div5) {
+		write("Buzz");
+	}
+	if (!div3 && !div5) {
+		write(i);
+	}
+	
+	if (i < max) {
+		write(", ");
+	} else {
+		write("\n");
+	}
 
-		i get 3 % 0 ==
-		if start
-			"Fizz" dump
-		end
+	i = i + 1;
+}
 
-		i get 5 % 0 ==
-		if start
-			"Buzz" dump
-		end
 
-		i get 3 % 0 ==
-		i get 5 % 0 ==
-		or not
-		if start
-			i get dump
-		end
 
-		i i get 1 + set
-		i get max get > if break
-	end
-end
-
-"Computing Fizz Buzz " count get + " times:\n\n" + dump
-
-count get fizzbuzz call
-"\n" dump

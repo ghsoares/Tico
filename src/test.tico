@@ -1,28 +1,46 @@
-#*
+# Based on: https://www.w3resource.com/projects/python/python-projects-1.php
 
-i = 0;
-max = 1000;
+function calcPi(limit) {
+	q = 1n;
+	r = 0n;
+	t = 1n;
+	k = 1n;
+	n = 3n;
+	l = 3n;
 
-while (i <= max) {
-	if (i % 3 == 0) {
-		write("Fizz");
-	}
-	if (i % 5 == 0) {
-		write("Buzz");
-	}
-	if (i % 3 != 0 && i % 5 != 0) {
-		write(i);
-	}
-	
-	if (i < max) {
-		write(", ");
-	} else {
-		write("\n");
-	}
+	decimal = limit;
+	counter = 0;
 
-	i = i + 1;
+	while (counter != decimal + 1) {
+		if (4n * q + r - t < n * t) {
+			write(n);
+			if (counter == 0) write(".");
+
+			if (decimal == counter) {
+				break;
+			}
+
+			counter = counter + 1;
+
+			nr = 10n * (r - n * t);
+			n = ((10n * (3n * q + r)) / t) - 10n * n;
+			q = q * 10n;
+			r = nr;
+		} else {
+			nr = (2n * q + r) * l;
+			nn = (q * (7n * k) + 2n + (r * l)) / (t * l);
+			q = q * k;
+			t = t * l;
+			l = l + 2n;
+			k = k + 1n;
+			n = nn;
+			r = nr;
+		}
+	}
 }
 
-*#
+calcPi(digits || 2000);
+write("\n")
 
-a = 30000n + BigInt(90)
+
+
