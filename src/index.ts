@@ -1,53 +1,46 @@
 import TicoParser from "./language/ticoParser";
 import TicoProgram from "./runtime/tico";
-import { fromHex, unescapeString } from "./utils";
 import fs from "fs";
 
 const source = fs.readFileSync('src/test.tico', 'utf-8');
 
-const parser = new TicoParser();
+const start = Date.now();
 
+const parser = new TicoParser();
 const main = parser.parse(source);
+const program = new TicoProgram(main);
 const str = TicoParser.stringify(
 	main,
 	{ showPosition: false }
 );
-const program = new TicoProgram(main);
 const astLines = str.split("\n").length - 1;
 
+process.stdout.write(str + "\n");
+process.stdout.write(`AST has ${astLines} lines\n`);
+
 class Foo {
-	private value: number;
+	public value: number;
 
 	constructor(value: number) {
 		this.value = value;
 	}
 
-	add(a: any, b: any) {
+	static add(a: any, b: any): Foo {
 		if (a instanceof Foo && b instanceof Foo) {
 			return new Foo(a.value + b.value);
 		}
+		if (a instanceof Foo && typeof b === 'number') {
+			return new Foo(a.value + b);
+		}
+
 		return null;
 	}
+};
 
-	mod(a: any, b: any) {
-		if (a instanceof Foo && b instanceof Foo) {
-			return new Foo(a.value % b.value);
-		}
-		return null;
-	}
+console.log(program.run({}, {
+	Foo: (value: number) => new Foo(value)
+}));
 
-	equals(a: any, b: any) {
-		if (a instanceof Foo && b instanceof Foo) {
-			return a.value === b.value;
-		}
-		return false;
-	}
-}
+const elapsed = Date.now() - start;
 
-const a = new Foo(9);
-const b = new Foo(9);
-
-process.stdout.write(str + "\n");
-process.stdout.write(`AST has ${astLines} lines\n`);
-
-console.log(program.run({a, b}));
+console.log(`Elapsed: ${elapsed} ms`);
