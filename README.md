@@ -161,7 +161,11 @@ I, the author, don't think that Tico could be useful in a real-world problem, as
 
 - [ ] Language documentation;
 - [x] Branching;
-- [ ] Loops;
+- [x] Loops;
 - [ ] Arrays and objects creation support;
 - [ ] Exceptions throwing;
 - [ ] Macros;
+
+## References
+- [JS Ecosystem Playlist](https://www.youtube.com/playlist?list=PLnipdbm4t965ROHrQlxLRcSavCudqq2mz)
+- [AST Explorer](https://astexplorer.net/)
