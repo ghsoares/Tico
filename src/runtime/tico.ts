@@ -3,10 +3,12 @@ import { TokenEnum } from "../language/ticoTokenizer";
 import { throwAtPos, Token } from "../language/tokenizer";
 import { foregroundReset, foreground, unescapeString, background, backgroundReset } from "../utils";
 
+/**
+ * Node type enum, contains all the node types used by Tico
+ */
 export enum NodeType {
-	Branch,
+	Branch,				
 	BinaryExpression,
-	//ConditionalExpression,
 	NegateExpression,
 	IfExpression,
 	ElseExpression,
@@ -17,12 +19,16 @@ export enum NodeType {
 	Set,
 	FunctionArg,
 	FunctionExpression,
-	ReturnExpression,
+	ReturnStatement,
+	BreakStatement,
 	FunctionCall,
 
 	Max,
 }
 
+/**
+ * Basic node type, contains the type, start and end pos, line and column
+ */
 export type Node = {
 	type: NodeType;
 	start: number;
@@ -31,6 +37,9 @@ export type Node = {
 	column: number;
 };
 
+/**
+ * Branch node type, one of the main nodes that divides the program into scopes
+ */
 export type BranchNode = {
 	parent: BranchNode;
 	children: Node[];
@@ -44,12 +53,6 @@ export type BinaryExpressionNode = {
 	operator: Token;
 	right: Node;
 } & Node;
-
-/*export type ConditionalExpressionNode = {
-	left: Node;
-	operator: Token;
-	right: Node;
-} & Node;*/
 
 export type NegateExpressionNode = {
 	expr: Node;
@@ -98,9 +101,11 @@ export type FunctionExpressionNode = {
 	args: FunctionArgNode[];
 } & BranchNode;
 
-export type ReturnExpressionNode = {
+export type ReturnStatementNode = {
 	expression: Node;
 } & Node;
+
+export type BreakStatementNode = {} & Node;
 
 export type FunctionCallNode = {
 	id: IdentifierNode;
@@ -134,9 +139,6 @@ export default class TicoProgram {
 			case NodeType.BinaryExpression: {
 				return this.evaluateBinaryExpression(branch, node as BinaryExpressionNode);
 			}
-			/*case NodeType.ConditionalExpression: {
-				return this.evaluateConditionalExpression(branch, node as ConditionalExpressionNode);
-			}*/
 			case NodeType.NegateExpression: {
 				return this.evaluateNegateExpression(branch, node as NegateExpressionNode);
 			}
@@ -155,8 +157,11 @@ export default class TicoProgram {
 			case NodeType.FunctionExpression: {
 				return this.evaluateFunctionCreate(branch, node as FunctionExpressionNode);
 			}
-			case NodeType.ReturnExpression: {
-				return this.evaluateReturnExpression(branch, node as ReturnExpressionNode);
+			case NodeType.ReturnStatement: {
+				return this.evaluateReturnStatement(branch, node as ReturnStatementNode);
+			}
+			case NodeType.BreakStatement: {
+				return this.evaluateBreakStatement(branch, node as BreakStatementNode);
 			}
 			case NodeType.FunctionCall: {
 				return this.evaluateFunctionCall(branch, node as FunctionCallNode);
@@ -171,60 +176,73 @@ export default class TicoProgram {
 		let leftValue: any = this.evaluateExpression(branch, left);
 		let rightValue: any = this.evaluateExpression(branch, right);
 
+		const overload = (type: string) => {
+			let o = null;
+			if (leftValue !== null && leftValue !== undefined) {
+				if (leftValue.constructor)
+					o = o || leftValue.constructor[type];
+			}
+			if (rightValue !== null && rightValue !== undefined) {
+				if (rightValue.constructor)
+					o = o || rightValue.constructor[type];
+			}
+			return o;
+		}
+
 		switch (operator.type) {
 			// Arithmetic
 			case TokenEnum.BinaryOpPlus: {
-				const addOverload = leftValue['add'] || rightValue['add'];
+				const addOverload = overload('add');
 				if (addOverload) 
 					return addOverload(leftValue, rightValue);
 
 				return leftValue + rightValue;
 			}
 			case TokenEnum.BinaryOpMinus: {
-				const subOverload = leftValue['sub'] || rightValue['sub'];
+				const subOverload = overload('sub');
 				if (subOverload) 
 					return subOverload(leftValue, rightValue);
 
 				return leftValue - rightValue;
 			}
 			case TokenEnum.BinaryOpStar: {
-				const multOverload = leftValue['mult'] || rightValue['mult'];
+				const multOverload = overload('mult');
 				if (multOverload) 
 					return multOverload(leftValue, rightValue);
 				
 				return leftValue * rightValue;
 			}
 			case TokenEnum.BinaryOpStarStar: {
-				const powOverload = leftValue['pow'] || rightValue['pow'];
+				const powOverload = overload('pow');
 				if (powOverload) 
 					return powOverload(leftValue, rightValue);
 				
 				return leftValue ** rightValue;
 			}
 			case TokenEnum.BinaryOpSlash: {
-				const divOverload = leftValue['div'] || rightValue['div'];
+				const divOverload = overload('div');
 				if (divOverload) 
 					return divOverload(leftValue, rightValue);
 				
 				return leftValue / rightValue;
 			}
 			case TokenEnum.BinaryOpSlashSlash: {
-				const fdivOverload = leftValue['fdiv'] || rightValue['fdiv'];
+				const fdivOverload = overload('fdiv');
 				if (fdivOverload) 
 					return fdivOverload(leftValue, rightValue);
 				
 				return Math.floor(leftValue / rightValue);
 			}
 			case TokenEnum.BinaryOpModulus: {
-				const modOverload = leftValue['mod'] || rightValue['mod'];
+				const modOverload = overload('mod');
 				if (modOverload) 
 					return modOverload(leftValue, rightValue);
 				
 				return leftValue % rightValue;
 			}
 			case TokenEnum.BinaryOpModulusModulus: {
-				const modOverload = leftValue['mod'] || rightValue['mod'];
-				const addOverload = leftValue['add'] || rightValue['add'];
+				const modOverload = overload('mod');
+				const addOverload = overload('add');
 				if (modOverload) {
 					return modOverload(
 						addOverload(
@@ -238,58 +256,58 @@ export default class TicoProgram {
 
 			// Conditional
 			case TokenEnum.ConditionalOpGreater: {
-				const greaterOverload = leftValue['greater'] || rightValue['greater'];
+				const greaterOverload = overload('greater');
 				if (greaterOverload)
 					return greaterOverload(leftValue, rightValue);
 
 				return leftValue > rightValue;
 			}
 			case TokenEnum.ConditionalOpLess: {
-				const lesserOverload = leftValue['lesser'] || rightValue['lesser'];
+				const lesserOverload = overload('lesser');
 				if (lesserOverload)
 					return lesserOverload(leftValue, rightValue);
 				
 				return leftValue < rightValue;
 			}
 			case TokenEnum.ConditionalOpGreaterEqual: {
-				const greaterOverload = leftValue['greater'] || rightValue['greater'];
-				const equalsOverload = leftValue['equals'] || rightValue['equals'];
+				const greaterOverload = overload('greater');
+				const equalsOverload = overload('equals');
 				if (greaterOverload && equalsOverload)
 					return greaterOverload(leftValue, rightValue) || equalsOverload(leftValue, rightValue);
 				
 				return leftValue >= rightValue;
 			}
 			case TokenEnum.ConditionalOpLessEqual: {
-				const lesserOverload = leftValue['lesser'] || rightValue['lesser'];
-				const equalsOverload = leftValue['equals'] || rightValue['equals'];
+				const lesserOverload = overload('lesser');
+				const equalsOverload = overload('equals');
 				if (lesserOverload && equalsOverload)
 					return lesserOverload(leftValue, rightValue) || equalsOverload(leftValue, rightValue);
 				
 				return leftValue <= rightValue;
 			}
 			case TokenEnum.ConditionalOpEqual: {
-				const equalsOverload = leftValue['equals'] || rightValue['equals'];
+				const equalsOverload = overload('equals');
 				if (equalsOverload)
 					return equalsOverload(leftValue, rightValue);
 				
 				return leftValue === rightValue;
 			}
 			case TokenEnum.ConditionalOpNotEqual: {
-				const equalsOverload = leftValue['equals'] || rightValue['equals'];
+				const equalsOverload = overload('equals');
 				if (equalsOverload)
 					return !equalsOverload(leftValue, rightValue);
 				
 				return leftValue !== rightValue;
 			}
 			case TokenEnum.ConditionalAnd: {
-				const andOverload = leftValue['and'] || rightValue['and'];
+				const andOverload = overload('and');
 				if (andOverload)
 					return !andOverload(leftValue, rightValue);
 				
 				return leftValue && rightValue;
 			}
 			case TokenEnum.ConditionalOr: {
-				const orOverload = leftValue['or'] || rightValue['or'];
+				const orOverload = overload('or');
 				if (orOverload)
 					return !orOverload(leftValue, rightValue);
 				
@@ -299,75 +317,6 @@ export default class TicoProgram {
 			default: throw throwAtPos(operator.line, operator.column, `Not implemented`);
 		}
 	}
-
-	/*private evaluateConditionalExpression(branch: BranchNode, node: ConditionalExpressionNode): any {
-		const { left, operator, right } = node;
-
-		let leftValue: any = this.evaluateExpression(branch, left);
-		let rightValue: any = this.evaluateExpression(branch, right);
-
-		switch (operator.type) {
-			case TokenEnum.ConditionalOpGreater: {
-				const greaterOverload = leftValue['greater'] || rightValue['greater'];
-				if (greaterOverload)
-					return greaterOverload(leftValue, rightValue);
-
-				return leftValue > rightValue;
-			}
-			case TokenEnum.ConditionalOpLess: {
-				const lesserOverload = leftValue['lesser'] || rightValue['lesser'];
-				if (lesserOverload)
-					return lesserOverload(leftValue, rightValue);
-				
-				return leftValue < rightValue;
-			}
-			case TokenEnum.ConditionalOpGreaterEqual: {
-				const greaterOverload = leftValue['greater'] || rightValue['greater'];
-				const equalsOverload = leftValue['equals'] || rightValue['equals'];
-				if (greaterOverload && equalsOverload)
-					return greaterOverload(leftValue, rightValue) || equalsOverload(leftValue, rightValue);
-				
-				return leftValue >= rightValue;
-			}
-			case TokenEnum.ConditionalOpLessEqual: {
-				const lesserOverload = leftValue['lesser'] || rightValue['lesser'];
-				const equalsOverload = leftValue['equals'] || rightValue['equals'];
-				if (lesserOverload && equalsOverload)
-					return lesserOverload(leftValue, rightValue) || equalsOverload(leftValue, rightValue);
-				
-				return leftValue <= rightValue;
-			}
-			case TokenEnum.ConditionalOpEqual: {
-				const equalsOverload = leftValue['equals'] || rightValue['equals'];
-				if (equalsOverload)
-					return equalsOverload(leftValue, rightValue);
-				
-				return leftValue === rightValue;
-			}
-			case TokenEnum.ConditionalOpNotEqual: {
-				const equalsOverload = leftValue['equals'] || rightValue['equals'];
-				if (equalsOverload)
-					return !equalsOverload(leftValue, rightValue);
-				
-				return leftValue !== rightValue;
-			}
-			case TokenEnum.ConditionalAnd: {
-				const andOverload = leftValue['and'] || rightValue['and'];
-				if (andOverload)
-					return !andOverload(leftValue, rightValue);
-				
-				return leftValue && rightValue;
-			}
-			case TokenEnum.ConditionalOr: {
-				const orOverload = leftValue['or'] || rightValue['or'];
-				if (orOverload)
-					return !orOverload(leftValue, rightValue);
-				
-				return leftValue || rightValue;
-			}
-			default: throw throwAtPos(operator.line, operator.column, `Not implemented`);
-		}
-	}*/
 
 	private evaluateNegateExpression(branch: BranchNode, node: NegateExpressionNode): any {
 		return !this.evaluateExpression(branch, node.expr);
@@ -405,6 +354,7 @@ export default class TicoProgram {
 			currVal = this.runBranch(node);
 
 			isTrue = this.evaluateExpression(branch, node.condition);
+			if (node.stopped) break;
 		}
 
 		return currVal;
@@ -451,7 +401,8 @@ export default class TicoProgram {
 
 		return {
 			get(): any {
-				if (!found) throw throwAtPos(node.line, node.column, `Couldn't find identifier "${key}"`);
+				//if (!found) throw throwAtPos(node.line, node.column, `Couldn't find identifier "${key}"`);
+				if (!found) return undefined;
 				return obj[key];
 			},
 			set(v: any) {
@@ -464,18 +415,29 @@ export default class TicoProgram {
 		this.evaluateFunction(branch, node.id).create(node as BranchNode);
 	}
 
-	private evaluateReturnExpression(branch: BranchNode, node: ReturnExpressionNode): any {
-		
+	private evaluateReturnStatement(branch: BranchNode, node: ReturnStatementNode): any {
 		let b = branch;
 		while (true) {
 			b.stopped = true;
-			if (b.type in [NodeType.FunctionExpression]) break;
+			if (b.type === NodeType.FunctionExpression) break;
 			if (b.parent) b = b.parent;
 			else break;
 		}
 
 		if (node.expression === null) return null;
 		return this.evaluateExpression(branch, node.expression);
+	}
+
+	private evaluateBreakStatement(branch: BranchNode, node: BreakStatementNode): any {
+		let b = branch;
+		while (true) {
+			b.stopped = true;
+			if (b.type === NodeType.WhileLoopExpression) break;
+			if (b.parent) b = b.parent;
+			else break;
+		}
+
+		return undefined;
 	}
 
 	private evaluateFunctionCall(branch: BranchNode, node: FunctionCallNode): any {

@@ -9,11 +9,12 @@ import {
 	FunctionExpressionNode,
 	FunctionCallNode,
 	FunctionArgNode,
-	ReturnExpressionNode,
+	ReturnStatementNode,
 	NegateExpressionNode,
 	IfExpressionNode,
 	ElseExpressionNode,
-	WhileLoopExpressionNode
+	WhileLoopExpressionNode,
+	BreakStatementNode,
 } from "../runtime/tico";
 import { treefy, TreefyOptions } from "../utils";
 import TicoTokenizer, { TokenEnum } from "./ticoTokenizer";
@@ -28,10 +29,12 @@ export default class TicoParser {
 
 	private literal(): Node {
 		const literal = 
-			this.tokenizer.tk(TokenEnum.LiteralNumber) ||
-			this.tokenizer.tk(TokenEnum.LiteralBigInt) ||
-			this.tokenizer.tk(TokenEnum.LiteralString) ||
-			this.tokenizer.tk(TokenEnum.LiteralBoolean)
+			this.tokenizer.tk(TokenEnum.LiteralNumber) 		||
+			this.tokenizer.tk(TokenEnum.LiteralBigInt) 		||
+			this.tokenizer.tk(TokenEnum.LiteralString) 		||
+			this.tokenizer.tk(TokenEnum.LiteralBoolean) 	||
+			this.tokenizer.tk(TokenEnum.LiteralNull) 		||
+			this.tokenizer.tk(TokenEnum.LiteralUndefined)
 			;
 
 		let val: any = null;
@@ -49,6 +52,12 @@ export default class TicoParser {
 				} break;
 				case TokenEnum.LiteralBoolean: {
 					val = literal.match[0] === 'true';
+				} break;
+				case TokenEnum.LiteralNull: {
+					val = null;
+				} break;
+				case TokenEnum.LiteralUndefined: {
+					val = undefined;
 				} break;
 			}
 			return {
@@ -155,7 +164,7 @@ export default class TicoParser {
 		if (!negate)
 			return this.tokenizer.tkRet(tkPos);
 
-		const expr = this.expression();
+		const expr = this.expressionMember();
 		if (!expr)
 			this.tokenizer.tkThrowErr(`Expected expression`);
 
@@ -261,71 +270,6 @@ export default class TicoParser {
 
 		return right;
 	}
-
-	/*private conditionalExpressionRecursive(left: Node): Node {
-		const operators = [
-			TokenEnum.ConditionalOpGreater,
-			TokenEnum.ConditionalOpLess,
-			TokenEnum.ConditionalOpGreaterEqual,
-			TokenEnum.ConditionalOpLessEqual,
-			TokenEnum.ConditionalOpEqual,
-			TokenEnum.ConditionalOpNotEqual,
-			TokenEnum.ConditionalAnd,
-			TokenEnum.ConditionalOr
-		];
-
-		if (operators.length !== (TokenEnum.BinaryOpMax - TokenEnum.BinaryOpMin) - 1)
-			throw new Error(`New binary operators added, update this function`)
-
-		const operator = (l: Node, id: number): Node => {
-			const op = this.tokenizer.tk(operators[id]);
-			if (!op) { return l; }
-
-			const next = this.binaryExpression() || this.expressionMember();
-			if (!next) this.tokenizer.tkThrowErr(`Expected expression member`);
-
-			let right = next;
-			if (id > 0) {
-				for (let i = id - 1; i >= 0; i--) {
-					right = operator(right, i);
-				}
-			}
-
-			const node: ConditionalExpressionNode = {
-				type: NodeType.ConditionalExpression,
-				left: l,
-				operator: op,
-				right,
-				start: l.start,
-				end: right.end,
-				line: l.line,
-				column: l.column
-			};
-
-			return operator(node, id);
-		}
-
-		let expr = left;
-		for (let i = 0; i < operators.length; i++) {
-			expr = operator(expr, i);
-		}
-
-		if (expr === left) return null;
-
-		return expr;
-	}
-
-	private conditionalExpression(): Node {
-		const tkPos = this.tokenizer.tkCursor();
-
-		const head = this.binaryExpression() || this.expressionMember();
-		if (!head) { return this.tokenizer.tkRet(tkPos); }
-
-		const right = this.conditionalExpressionRecursive(head);
-		if (!right) { return this.tokenizer.tkRet(tkPos); }
-
-		return right;
-	}*/
 
 	private ifExpression(): Node {
 		const tkPos = this.tokenizer.tkCursor();
@@ -517,31 +461,43 @@ export default class TicoParser {
 		return branch;
 	}
 
-	private returnExpression(): Node {
+	private returnStatement(): Node {
 		const retKey = this.tokenizer.tk(TokenEnum.KeywordReturn);
 		if (!retKey) return null;
 
 		const retExpr = this.expression();
 
 		return {
-			type: NodeType.ReturnExpression,
+			type: NodeType.ReturnStatement,
 			expression: retExpr,
 			start: retKey.start,
 			end: retExpr ? retExpr.end : retKey.end,
 			line: retKey.line,
 			column: retKey.column
-		} as ReturnExpressionNode;
+		} as ReturnStatementNode;
+	}
+
+	private breakStatement(): Node {
+		const breakKey = this.tokenizer.tk(TokenEnum.KeywordBreak);
+		if (!breakKey) return null;
+
+		return {
+			type: NodeType.BreakStatement,
+			start: breakKey.start,
+			end: breakKey.end,
+			line: breakKey.line,
+			column: breakKey.column
+		} as BreakStatementNode;
 	}
 
 	private expression(): Node {
-		const expr = this.negateExpression() ||
-			this.wrappedExpression() ||
+		const expr =
 			this.variableSet() ||
 			this.functionExpression() ||
-			this.returnExpression() ||
+			this.returnStatement() ||
+			this.breakStatement() ||
 			this.ifExpression() ||
 			this.whileExpression() ||
-			//this.conditionalExpression() ||
 			this.binaryExpression() ||
 			this.expressionMember();
 
@@ -564,10 +520,8 @@ export default class TicoParser {
 		let ended = false;
 
 		while (true) {
-			const node = this.variableSet() ||
-				this.functionExpression() ||
-				this.ifExpression() ||
-				this.expression();
+			const node = this.expression();
+
 			if (node) {
 				if (branch.children.length === 0)
 					branch.start = node.start;
@@ -679,16 +633,6 @@ export default class TicoParser {
 					tree['operator'] = nd.operator.match[0];
 					tree['right'] = getTree(nd.right);
 				} break;
-				/*case NodeType.ConditionalExpression: {
-					const nd = n as ConditionalExpressionNode;
-
-					tree['title'] = "ConditionalExpressionNode";
-					if (showPosition) tree['position'] = position();
-
-					tree['left'] = getTree(nd.left);
-					tree['operator'] = nd.operator.match[0];
-					tree['right'] = getTree(nd.right);
-				} break;*/
 				case NodeType.NegateExpression: {
 					const nd = n as NegateExpressionNode;
 
@@ -789,13 +733,19 @@ export default class TicoParser {
 						tree['scope'] = nd.children.map(c => getTree(c));
 					}
 				} break;
-				case NodeType.ReturnExpression: {
-					const nd = n as ReturnExpressionNode;
+				case NodeType.ReturnStatement: {
+					const nd = n as ReturnStatementNode;
 
-					tree['title'] = "ReturnExpressionNode";
+					tree['title'] = "ReturnStatementNode";
 					if (showPosition) tree['position'] = position();
 
 					tree['expression'] = getTree(nd.expression);
+				} break;
+				case NodeType.BreakStatement: {
+					const nd = n as BreakStatementNode;
+
+					tree['title'] = "BreakStatementNode";
+					if (showPosition) tree['position'] = position();
 				} break;
 				case NodeType.FunctionCall: {
 					const nd = n as FunctionCallNode;
