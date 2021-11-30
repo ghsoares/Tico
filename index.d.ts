@@ -7,5 +7,6 @@ declare function createWorker(): Worker;
 export {
 	TicoTokenizer,
 	TicoParser,
-	TicoProgram
+	TicoProgram,
+	createWorker
 };
