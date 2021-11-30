@@ -1,44 +1,19 @@
-import {
-	BinaryExpressionNode,
-	BranchNode,
-	LiteralNode,
-	Node,
-	NodeType,
-	SetNode,
-	IdentifierNode,
-	FunctionExpressionNode,
-	FunctionCallNode,
-	FunctionArgNode,
-	ReturnStatementNode,
-	NegateExpressionNode,
-	IfExpressionNode,
-	ElseExpressionNode,
-	WhileLoopExpressionNode,
-	BreakStatementNode,
-	ForLoopExpressionNode,
-} from "../runtime/tico";
-import { treefy, TreefyOptions } from "../utils";
-import TicoTokenizer, { TokenEnum } from "./ticoTokenizer";
-
-export type StringifyOptions = {
-	indent?: string;
-	showPosition?: boolean;
-};
+import { NodeType } from "../runtime/tico.js";
+import { treefy } from "../utils/index.js";
+import TicoTokenizer, { TokenEnum } from "./ticoTokenizer.js";
 
 export default class TicoParser {
-	private tokenizer: TicoTokenizer;
-
-	private literal(): Node {
-		const literal = 
-			this.tokenizer.tk(TokenEnum.LiteralNumber) 		||
-			this.tokenizer.tk(TokenEnum.LiteralBigInt) 		||
-			this.tokenizer.tk(TokenEnum.LiteralString) 		||
-			this.tokenizer.tk(TokenEnum.LiteralBoolean) 	||
-			this.tokenizer.tk(TokenEnum.LiteralNull) 		||
+	literal() {
+		const literal =
+			this.tokenizer.tk(TokenEnum.LiteralNumber) ||
+			this.tokenizer.tk(TokenEnum.LiteralBigInt) ||
+			this.tokenizer.tk(TokenEnum.LiteralString) ||
+			this.tokenizer.tk(TokenEnum.LiteralBoolean) ||
+			this.tokenizer.tk(TokenEnum.LiteralNull) ||
 			this.tokenizer.tk(TokenEnum.LiteralUndefined)
 			;
 
-		let val: any = null;
+		let val = null;
 
 		if (literal) {
 			switch (literal.type) {
@@ -69,12 +44,12 @@ export default class TicoParser {
 				end: literal.end,
 				line: literal.line,
 				column: literal.column
-			} as LiteralNode;
+			};
 		}
 		return null;
 	}
 
-	private identifier(): Node {
+	identifier() {
 		const v = this.tokenizer.tk(TokenEnum.ExtraIdentifier);
 		if (v) {
 			return {
@@ -84,13 +59,13 @@ export default class TicoParser {
 				end: v.end,
 				line: v.line,
 				column: v.column
-			} as IdentifierNode;
+			};
 		}
 		return null;
 	}
 
-	private functionCallArgs(): Node[] {
-		const args: Node[] = [];
+	functionCallArgs() {
+		const args = [];
 
 		while (true) {
 			const val = this.expression();
@@ -109,10 +84,10 @@ export default class TicoParser {
 		return args;
 	}
 
-	private functionCall(): Node {
+	functionCall() {
 		const tkPos = this.tokenizer.tkCursor();
 
-		const id = this.identifier() as IdentifierNode;
+		const id = this.identifier();
 		if (!id)
 			return this.tokenizer.tkRet(tkPos);
 
@@ -133,10 +108,10 @@ export default class TicoParser {
 			end: close.end,
 			line: id.line,
 			column: id.column
-		} as FunctionCallNode;
+		};
 	}
 
-	private wrappedExpression(): Node {
+	wrappedExpression() {
 		const tkPos = this.tokenizer.tkCursor();
 
 		const parOpen = this.tokenizer.tk(TokenEnum.SymbolParOpen);
@@ -158,7 +133,7 @@ export default class TicoParser {
 		return expr;
 	}
 
-	private negateExpression(): Node {
+	negateExpression() {
 		const tkPos = this.tokenizer.tkCursor();
 
 		const negate = this.tokenizer.tk(TokenEnum.SymbolExclamationMark);
@@ -176,19 +151,19 @@ export default class TicoParser {
 			end: expr.end,
 			line: negate.line,
 			column: negate.column
-		} as NegateExpressionNode;
+		};
 	}
 
-	private expressionMember(): Node {
-		return  this.negateExpression() ||
-				this.wrappedExpression() ||
-				this.functionCall() ||
-				this.identifier() ||
-				this.literal()
-				;
+	expressionMember() {
+		return this.negateExpression() ||
+			this.wrappedExpression() ||
+			this.functionCall() ||
+			this.identifier() ||
+			this.literal()
+			;
 	}
 
-	private binaryExpressionRecursive(left: Node): Node {
+	binaryExpressionRecursive(left) {
 		const operators = [
 			// Binary
 			[TokenEnum.BinaryOpStarStar],
@@ -196,7 +171,7 @@ export default class TicoParser {
 			[TokenEnum.BinaryOpSlash,
 			TokenEnum.BinaryOpStar,
 			TokenEnum.BinaryOpModulus],
-			
+
 			[TokenEnum.BinaryOpSlashSlash,
 			TokenEnum.BinaryOpModulusModulus],
 
@@ -216,7 +191,7 @@ export default class TicoParser {
 			TokenEnum.ConditionalOr],
 		];
 
-		const operator = (l: Node, id: number): Node => {
+		const operator = (l, id) => {
 			let op = null;
 			for (const operator of operators[id]) {
 				op = op || this.tokenizer.tk(operator);
@@ -231,7 +206,7 @@ export default class TicoParser {
 				right = operator(right, i);
 			}
 
-			let node: Node = {
+			let node = {
 				type: NodeType.BinaryExpression,
 				left: l,
 				operator: op,
@@ -240,7 +215,7 @@ export default class TicoParser {
 				end: right.end,
 				line: l.line,
 				column: l.column
-			} as BinaryExpressionNode;
+			};
 
 			for (let i = operators.length - 1; i > id; i--) {
 				node = operator(node, i);
@@ -260,7 +235,7 @@ export default class TicoParser {
 		return expr;
 	}
 
-	private binaryExpression(): Node {
+	binaryExpression() {
 		const tkPos = this.tokenizer.tkCursor();
 
 		const head = this.expressionMember();
@@ -272,7 +247,7 @@ export default class TicoParser {
 		return right;
 	}
 
-	private ifExpression(): Node {
+	ifExpression() {
 		const tkPos = this.tokenizer.tkCursor();
 
 		const ifKey = this.tokenizer.tk(TokenEnum.KeywordIf);
@@ -284,11 +259,11 @@ export default class TicoParser {
 		const expr = this.expression();
 		if (!expr)
 			this.tokenizer.tkThrowErr("Expected expression");
-		
+
 		if (!this.tokenizer.tk(TokenEnum.SymbolBracketClose))
 			this.tokenizer.tkThrowErr(`Expected ")"`);
 
-		const branch = this.branch() as IfExpressionNode;
+		const branch = this.branch();
 
 		branch.type = NodeType.IfExpression;
 		branch.condition = expr;
@@ -307,13 +282,13 @@ export default class TicoParser {
 		return branch;
 	}
 
-	private elseExpression() {
+	elseExpression() {
 		const tkPos = this.tokenizer.tkCursor();
 
 		const elseKey = this.tokenizer.tk(TokenEnum.KeywordElse);
 		if (!elseKey) { return this.tokenizer.tkRet(tkPos); }
 
-		const branch = this.branch() as ElseExpressionNode;
+		const branch = this.branch();
 
 		branch.type = NodeType.ElseExpression;
 		branch.start = elseKey.start;
@@ -323,7 +298,7 @@ export default class TicoParser {
 		return branch;
 	}
 
-	private elifExpression() {
+	elifExpression() {
 		const tkPos = this.tokenizer.tkCursor();
 
 		const elifKey = this.tokenizer.tk(TokenEnum.KeywordElif);
@@ -339,7 +314,7 @@ export default class TicoParser {
 		if (!this.tokenizer.tk(TokenEnum.SymbolParClose))
 			this.tokenizer.tkThrowErr(`Expected ")"`);
 
-		const branch = this.branch() as IfExpressionNode;
+		const branch = this.branch();
 
 		branch.type = NodeType.IfExpression;
 		branch.condition = expr;
@@ -357,7 +332,7 @@ export default class TicoParser {
 		return branch;
 	}
 
-	private whileLoopExpression() {
+	whileLoopExpression() {
 		const tkPos = this.tokenizer.tkCursor();
 
 		const whileKey = this.tokenizer.tk(TokenEnum.KeywordWhile);
@@ -373,7 +348,7 @@ export default class TicoParser {
 		if (!this.tokenizer.tk(TokenEnum.SymbolParClose))
 			this.tokenizer.tkThrowErr(`Expected ")"`);
 
-		const branch = this.branch() as WhileLoopExpressionNode;
+		const branch = this.branch();
 
 		branch.type = NodeType.WhileLoopExpression;
 		branch.condition = expr;
@@ -384,7 +359,7 @@ export default class TicoParser {
 		return branch;
 	}
 
-	private forExpression() {
+	forExpression() {
 		const tkPos = this.tokenizer.tkCursor();
 
 		const forKey = this.tokenizer.tk(TokenEnum.KeywordFor);
@@ -392,7 +367,7 @@ export default class TicoParser {
 
 		if (!this.tokenizer.tk(TokenEnum.SymbolParOpen))
 			this.tokenizer.tkThrowErr(`Expected "("`);
-		
+
 		const init = this.expression();
 		if (!init)
 			this.tokenizer.tkThrowErr(`Expected expression`);
@@ -407,8 +382,8 @@ export default class TicoParser {
 
 		if (!this.tokenizer.tk(TokenEnum.SymbolParClose))
 			this.tokenizer.tkThrowErr(`Expected "("`);
-		
-		const branch = this.branch() as ForLoopExpressionNode;
+
+		const branch = this.branch();
 
 		branch.type = NodeType.ForLoopExpression;
 		branch.init = init;
@@ -421,10 +396,10 @@ export default class TicoParser {
 		return branch;
 	}
 
-	private variableSet(): Node {
+	variableSet() {
 		const tkPos = this.tokenizer.tkCursor();
 
-		const id = this.identifier() as IdentifierNode;
+		const id = this.identifier();
 		if (!id)
 			return this.tokenizer.tkRet(tkPos);
 
@@ -434,7 +409,7 @@ export default class TicoParser {
 		const expr = this.expression();
 		if (!expr) this.tokenizer.tkThrowErr(`Expected expression`);
 
-		const node: SetNode = {
+		const node = {
 			type: NodeType.Set,
 			id,
 			value: expr,
@@ -447,13 +422,13 @@ export default class TicoParser {
 		return node;
 	}
 
-	private functionExpressionArgs(): FunctionArgNode[] {
-		const args: FunctionArgNode[] = [];
+	functionExpressionArgs() {
+		const args = [];
 
 		while (true) {
 			const staticArg = this.tokenizer.tk(TokenEnum.SymbolExclamationMark) !== null;
 
-			const id = this.identifier() as IdentifierNode;
+			const id = this.identifier();
 			if (!id) {
 				if (args.length > 0)
 					this.tokenizer.tkThrowErr(`Expected identifier`);
@@ -461,7 +436,7 @@ export default class TicoParser {
 			}
 
 			const eq = this.tokenizer.tk(TokenEnum.SymbolEquals);
-			let defValue: Node = null;
+			let defValue = null;
 			if (eq) {
 				defValue = this.expression();
 				if (!defValue)
@@ -487,14 +462,14 @@ export default class TicoParser {
 		return args;
 	}
 
-	private functionExpression(): Node {
+	functionExpression() {
 		const tkPos = this.tokenizer.tkCursor();
 
 		const keyFunc = this.tokenizer.tk(TokenEnum.KeywordFunction);
 		if (!keyFunc)
 			return this.tokenizer.tkRet(tkPos);
 
-		const id = this.identifier() as IdentifierNode;
+		const id = this.identifier();
 		if (!id)
 			this.tokenizer.tkThrowErr(`Expected identifier`);
 
@@ -506,7 +481,7 @@ export default class TicoParser {
 		if (!this.tokenizer.tk(TokenEnum.SymbolParClose))
 			this.tokenizer.tkThrowErr(`Expected ")"`);
 
-		const branch = this.branch() as FunctionExpressionNode;
+		const branch = this.branch();
 		branch.type = NodeType.FunctionExpression;
 		branch.id = id;
 		branch.args = args;
@@ -517,7 +492,7 @@ export default class TicoParser {
 		return branch;
 	}
 
-	private returnStatement(): Node {
+	returnStatement() {
 		const retKey = this.tokenizer.tk(TokenEnum.KeywordReturn);
 		if (!retKey) return null;
 
@@ -530,10 +505,10 @@ export default class TicoParser {
 			end: retExpr ? retExpr.end : retKey.end,
 			line: retKey.line,
 			column: retKey.column
-		} as ReturnStatementNode;
+		};
 	}
 
-	private breakStatement(): Node {
+	breakStatement() {
 		const breakKey = this.tokenizer.tk(TokenEnum.KeywordBreak);
 		if (!breakKey) return null;
 
@@ -543,10 +518,10 @@ export default class TicoParser {
 			end: breakKey.end,
 			line: breakKey.line,
 			column: breakKey.column
-		} as BreakStatementNode;
+		};
 	}
 
-	private expression(): Node {
+	expression() {
 		const expr =
 			this.variableSet() ||
 			this.functionExpression() ||
@@ -562,8 +537,8 @@ export default class TicoParser {
 		return expr;
 	}
 
-	private branch(): BranchNode {
-		const branch: BranchNode = {
+	branch() {
+		const branch = {
 			type: NodeType.Branch,
 			parent: null,
 			children: [],
@@ -612,8 +587,8 @@ export default class TicoParser {
 		return branch;
 	}
 
-	private mainBranch(): BranchNode {
-		const branch: BranchNode = {
+	mainBranch() {
+		const branch = {
 			type: NodeType.Branch,
 			parent: null,
 			children: [],
@@ -644,7 +619,7 @@ export default class TicoParser {
 		return branch;
 	}
 
-	public parse(source: string): BranchNode {
+	parse(source) {
 		this.tokenizer = new TicoTokenizer();
 		this.tokenizer.tokenize(source);
 
@@ -657,10 +632,10 @@ export default class TicoParser {
 		return main;
 	}
 
-	public static stringify(node: Node, options: StringifyOptions = {}, treefyOptions: TreefyOptions = {}): string {
+	static stringify(node, options = {}, treefyOptions = {}) {
 		const { showPosition = true } = options;
 
-		const getTree = (n: Node) => {
+		const getTree = (n) => {
 			if (n === null) return null;
 
 			const tree = {};
@@ -669,165 +644,163 @@ export default class TicoParser {
 
 			switch (n.type) {
 				case NodeType.Branch: {
-					const nd = n as BranchNode;
-
 					tree['title'] = "BranchNode";
 					if (showPosition) tree['position'] = position();
 
-					if (nd.children.length === 0) {
+					if (n.children.length === 0) {
 						tree['scope'] = 'empty';
 					} else {
-						tree['scope'] = nd.children.map(c => getTree(c));
+						tree['scope'] = n.children.map(c => getTree(c));
 					}
 				} break;
 				case NodeType.BinaryExpression: {
-					const nd = n as BinaryExpressionNode;
+
 
 					tree['title'] = "BinaryExpressionNode";
 					if (showPosition) tree['position'] = position();
 
-					tree['left'] = getTree(nd.left);
-					tree['operator'] = nd.operator.match[0];
-					tree['right'] = getTree(nd.right);
+					tree['left'] = getTree(n.left);
+					tree['operator'] = n.operator.match[0];
+					tree['right'] = getTree(n.right);
 				} break;
 				case NodeType.NegateExpression: {
-					const nd = n as NegateExpressionNode;
+
 
 					tree['title'] = "NegateExpressionNode";
 					if (showPosition) tree['position'] = position();
 
-					tree['expr'] = getTree(nd.expr);
+					tree['expr'] = getTree(n.expr);
 				} break;
 				case NodeType.IfExpression: {
-					const nd = n as IfExpressionNode;
+
 
 					tree['title'] = "IfExpressionNode";
 					if (showPosition) tree['position'] = position();
 
-					tree['condition'] = getTree(nd.condition);
-					if (nd.children.length === 0) {
+					tree['condition'] = getTree(n.condition);
+					if (n.children.length === 0) {
 						tree['scope'] = 'empty';
 					} else {
-						tree['scope'] = nd.children.map(c => getTree(c));
+						tree['scope'] = n.children.map(c => getTree(c));
 					}
-					if (nd.next) {
-						tree['next'] = getTree(nd.next);
+					if (n.next) {
+						tree['next'] = getTree(n.next);
 					} else {
 						tree['next'] = 'empty';
 					}
 				} break;
 				case NodeType.ElseExpression: {
-					const nd = n as ElseExpressionNode;
+
 
 					tree['title'] = "ElseExpressionNode";
 					if (showPosition) tree['position'] = position();
 
-					if (nd.children.length === 0) {
+					if (n.children.length === 0) {
 						tree['scope'] = 'empty';
 					} else {
-						tree['scope'] = nd.children.map(c => getTree(c));
+						tree['scope'] = n.children.map(c => getTree(c));
 					}
 				} break;
 				case NodeType.WhileLoopExpression: {
-					const nd = n as WhileLoopExpressionNode;
+
 
 					tree['title'] = "WhileLoopExpressionNode";
 					if (showPosition) tree['position'] = position();
 
-					tree['condition'] = getTree(nd.condition);
-					if (nd.children.length === 0) {
+					tree['condition'] = getTree(n.condition);
+					if (n.children.length === 0) {
 						tree['scope'] = 'empty';
 					} else {
-						tree['scope'] = nd.children.map(c => getTree(c));
+						tree['scope'] = n.children.map(c => getTree(c));
 					}
 				} break;
 				case NodeType.ForLoopExpression: {
-					const nd = n as ForLoopExpressionNode;
+
 
 					tree['title'] = "ForLoopExpressionNode";
 					if (showPosition) tree['position'] = position();
 
-					tree['init'] = getTree(nd.init);
-					tree['condition'] = getTree(nd.condition);
-					tree['iterate'] = getTree(nd.iterate);
+					tree['init'] = getTree(n.init);
+					tree['condition'] = getTree(n.condition);
+					tree['iterate'] = getTree(n.iterate);
 
-					if (nd.children.length === 0) {
+					if (n.children.length === 0) {
 						tree['scope'] = 'empty';
 					} else {
-						tree['scope'] = nd.children.map(c => getTree(c));
+						tree['scope'] = n.children.map(c => getTree(c));
 					}
 				} break;
 				case NodeType.Literal: {
-					const nd = n as LiteralNode;
+
 
 					tree['title'] = "LiteralNode";
 					if (showPosition) tree['position'] = position();
 
-					tree['value'] = nd.value;
+					tree['value'] = n.value;
 				} break;
 				case NodeType.Identifier: {
-					const nd = n as IdentifierNode;
+
 
 					tree['title'] = "IdentifierNode";
 					if (showPosition) tree['position'] = position();
 
-					tree['id'] = nd.id.match[0];
+					tree['id'] = n.id.match[0];
 				} break;
 				case NodeType.Set: {
-					const nd = n as SetNode;
+
 
 					tree['title'] = "SetNode";
 					if (showPosition) tree['position'] = position();
 
-					tree['id'] = getTree(nd.id);
-					tree['value'] = getTree(nd.value);
+					tree['id'] = getTree(n.id);
+					tree['value'] = getTree(n.value);
 				} break;
 				case NodeType.FunctionArg: {
-					const nd = n as FunctionArgNode;
+
 
 					tree['title'] = "FunctionArgNode";
 					if (showPosition) tree['position'] = position();
 
-					tree['id'] = getTree(nd.id);
-					tree['defaultValue'] = getTree(nd.defaultValueExpression);
-					tree['staticDefaultValue'] = nd.staticDefaultValue;
+					tree['id'] = getTree(n.id);
+					tree['defaultValue'] = getTree(n.defaultValueExpression);
+					tree['staticDefaultValue'] = n.staticDefaultValue;
 				} break;
 				case NodeType.FunctionExpression: {
-					const nd = n as FunctionExpressionNode;
+
 
 					tree['title'] = "FunctionExpressionNode";
 					if (showPosition) tree['position'] = position();
 
-					tree['id'] = getTree(nd.id);
-					tree['args'] = nd.args.map(arg => getTree(arg));
-					if (nd.children.length === 0) {
+					tree['id'] = getTree(n.id);
+					tree['args'] = n.args.map(arg => getTree(arg));
+					if (n.children.length === 0) {
 						tree['scope'] = 'empty';
 					} else {
-						tree['scope'] = nd.children.map(c => getTree(c));
+						tree['scope'] = n.children.map(c => getTree(c));
 					}
 				} break;
 				case NodeType.ReturnStatement: {
-					const nd = n as ReturnStatementNode;
+
 
 					tree['title'] = "ReturnStatementNode";
 					if (showPosition) tree['position'] = position();
 
-					tree['expression'] = getTree(nd.expression);
+					tree['expression'] = getTree(n.expression);
 				} break;
 				case NodeType.BreakStatement: {
-					const nd = n as BreakStatementNode;
+
 
 					tree['title'] = "BreakStatementNode";
 					if (showPosition) tree['position'] = position();
 				} break;
 				case NodeType.FunctionCall: {
-					const nd = n as FunctionCallNode;
+
 
 					tree['title'] = "FunctionCallNode";
 					if (showPosition) tree['position'] = position();
 
-					tree['id'] = getTree(nd.id);
-					tree['args'] = nd.args.map(arg => getTree(arg));
+					tree['id'] = getTree(n.id);
+					tree['args'] = n.args.map(arg => getTree(arg));
 				} break;
 				default: throw new Error(`Not implemented`);
 			}

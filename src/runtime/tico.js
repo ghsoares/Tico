@@ -1,185 +1,91 @@
-import TicoParser from "../language/ticoParser";
-import { TokenEnum } from "../language/ticoTokenizer";
-import { throwAtPos, Token } from "../language/tokenizer";
-import { foregroundReset, foreground, unescapeString, background, backgroundReset } from "../utils";
+import TicoParser from "../language/ticoParser.js";
+import { TokenEnum } from "../language/ticoTokenizer.js";
+import { throwAtPos } from "../language/tokenizer.js";
+import { foregroundReset, foreground, unescapeString, background, backgroundReset, iota } from "../utils/index.js";
 
 /**
  * Node type enum, contains all the node types used by Tico
  */
-export enum NodeType {
-	Branch,				
-	BinaryExpression,
-	NegateExpression,
-	IfExpression,
-	ElseExpression,
-	WhileLoopExpression,
-	ForLoopExpression,
-	Literal,
-	Identifier,
-	Set,
-	FunctionArg,
-	FunctionExpression,
-	ReturnStatement,
-	BreakStatement,
-	FunctionCall,
+export const NodeType = {
+	Branch: iota(),				
+	BinaryExpression: iota(),
+	NegateExpression: iota(),
+	IfExpression: iota(),
+	ElseExpression: iota(),
+	WhileLoopExpression: iota(),
+	ForLoopExpression: iota(),
+	Literal: iota(),
+	Identifier: iota(),
+	Set: iota(),
+	FunctionArg: iota(),
+	FunctionExpression: iota(),
+	ReturnStatement: iota(),
+	BreakStatement: iota(),
+	FunctionCall: iota(),
 
-	Max,
+	Max: iota(true),
 }
 
-/**
- * Basic node type, contains the type, start and end pos, line and column
- */
-export type Node = {
-	type: NodeType;
-	start: number;
-	end: number;
-	line: number;
-	column: number;
-};
-
-/**
- * Branch node type, one of the main nodes that divides the program into scopes
- */
-export type BranchNode = {
-	parent: BranchNode;
-	children: Node[];
-	variables?: { [key: string]: any };
-	functions?: { [key: string]: FunctionExpressionNode };
-	stopped?: boolean;
-} & Node;
-
-export type BinaryExpressionNode = {
-	left: Node;
-	operator: Token;
-	right: Node;
-} & Node;
-
-export type NegateExpressionNode = {
-	expr: Node;
-} & Node;
-
-export type IfExpressionNode = {
-	condition: Node;
-	next?: Node;
-} & BranchNode;
-
-export type ElseExpressionNode = {} & BranchNode;
-
-export type WhileLoopExpressionNode = {
-	condition: Node;
-} & BranchNode;
-
-export type ForLoopExpressionNode = {
-	init: Node;
-	condition: Node;
-	iterate: Node;
-} & BranchNode;
-
-export type LiteralNode = {
-	value: any;
-	raw: Token;
-} & Node;
-
-export type IdentifierNode = {
-	id: Token;
-} & Node;
-
-export type SetNode = {
-	id: IdentifierNode;
-	value: Node;
-} & Node;
-
-export type FunctionArgNode = {
-	id: IdentifierNode;
-	defaultValueExpression: Node;
-	defaultValueEvaluated?: any;
-	staticDefaultValue: boolean;
-} & Node;
-
-export type FunctionExpressionNode = {
-	id: IdentifierNode;
-	args: FunctionArgNode[];
-} & BranchNode;
-
-export type ReturnStatementNode = {
-	expression: Node;
-} & Node;
-
-export type BreakStatementNode = {} & Node;
-
-export type FunctionCallNode = {
-	id: IdentifierNode;
-	args: Node[];
-} & Node;
-
-export type SetterGetterValue = {
-	set(val: any): void;
-	get(): any;
-};
-
-export type FunctionValue = {
-	create(branch: BranchNode): void;
-	call(args: Node[]): any;
-};
-
 export default class TicoProgram {
+	/*
 	private mainBranch: BranchNode;
 	private variables: { [key: string]: any };
 	private functions: { [key: string]: (...args: any[]) => any };
+	*/
 
-	public constructor(main: BranchNode) {
+	constructor(main) {
 		this.mainBranch = main;
 	}
 
-	private evaluateExpression(branch: BranchNode, node: Node): any {
+	evaluateExpression(branch, node) {
 		switch (node.type) {
 			case NodeType.Literal: {
-				return (node as LiteralNode).value;
+				return node.value;
 			}
 			case NodeType.BinaryExpression: {
-				return this.evaluateBinaryExpression(branch, node as BinaryExpressionNode);
+				return this.evaluateBinaryExpression(branch, node);
 			}
 			case NodeType.NegateExpression: {
-				return this.evaluateNegateExpression(branch, node as NegateExpressionNode);
+				return this.evaluateNegateExpression(branch, node);
 			}
 			case NodeType.IfExpression: {
-				return this.evaluateIfExpression(branch, node as IfExpressionNode);
+				return this.evaluateIfExpression(branch, node);
 			}
 			case NodeType.WhileLoopExpression: {
-				return this.evaluateWhileLoopExpression(branch, node as WhileLoopExpressionNode);
+				return this.evaluateWhileLoopExpression(branch, node);
 			}
 			case NodeType.ForLoopExpression: {
-				return this.evaluateForLoopExpression(branch, node as ForLoopExpressionNode);
+				return this.evaluateForLoopExpression(branch, node);
 			}
 			case NodeType.Set: {
-				return this.evaluateSet(branch, node as SetNode);
+				return this.evaluateSet(branch, node);
 			}
 			case NodeType.Identifier: {
-				return this.evaluateIdentifier(branch, node as IdentifierNode).get();
+				return this.evaluateIdentifier(branch, node).get();
 			}
 			case NodeType.FunctionExpression: {
-				return this.evaluateFunctionCreate(branch, node as FunctionExpressionNode);
+				return this.evaluateFunctionCreate(branch, node);
 			}
 			case NodeType.ReturnStatement: {
-				return this.evaluateReturnStatement(branch, node as ReturnStatementNode);
+				return this.evaluateReturnStatement(branch, node);
 			}
 			case NodeType.BreakStatement: {
-				return this.evaluateBreakStatement(branch, node as BreakStatementNode);
+				return this.evaluateBreakStatement(branch, node);
 			}
 			case NodeType.FunctionCall: {
-				return this.evaluateFunctionCall(branch, node as FunctionCallNode);
+				return this.evaluateFunctionCall(branch, node);
 			}
 			default: throw throwAtPos(node.line, node.column, `Not implemented`);
 		}
 	}
 
-	private evaluateBinaryExpression(branch: BranchNode, node: BinaryExpressionNode): any {
+	evaluateBinaryExpression(branch, node) {
 		const { left, operator, right } = node;
 
-		let leftValue: any = this.evaluateExpression(branch, left);
-		let rightValue: any = this.evaluateExpression(branch, right);
+		let leftValue = this.evaluateExpression(branch, left);
+		let rightValue = this.evaluateExpression(branch, right);
 
-		const overload = (type: string) => {
+		const overload = (type) => {
 			let o = null;
 			if (leftValue !== null && leftValue !== undefined) {
 				if (leftValue.constructor)
@@ -321,11 +227,11 @@ export default class TicoProgram {
 		}
 	}
 
-	private evaluateNegateExpression(branch: BranchNode, node: NegateExpressionNode): any {
+	evaluateNegateExpression(branch, node) {
 		return !this.evaluateExpression(branch, node.expr);
 	}
 
-	private evaluateIfExpression(branch: BranchNode, node: IfExpressionNode): any {
+	evaluateIfExpression(branch, node) {
 		const isTrue = this.evaluateExpression(branch, node.condition);
 
 		if (isTrue) {
@@ -335,18 +241,19 @@ export default class TicoProgram {
 			return this.runBranch(node);
 		} else if (node.next) {
 			if (node.next.type === NodeType.ElseExpression) {
-				const elseNode = node.next as ElseExpressionNode;
+				const elseNode = node.next;
 				elseNode.parent = branch;
 				elseNode.functions = {};
 				elseNode.variables = {};
+
 				return this.runBranch(elseNode);
 			} else if (node.next.type === NodeType.IfExpression) {
-				return this.evaluateExpression(branch, node.next as IfExpressionNode)
+				return this.evaluateExpression(branch, node.next)
 			}
 		}
 	}
 
-	private evaluateWhileLoopExpression(branch: BranchNode, node: WhileLoopExpressionNode): any {
+	evaluateWhileLoopExpression(branch, node) {
 		let currVal = undefined;
 
 		let isTrue = this.evaluateExpression(branch, node.condition);
@@ -363,7 +270,7 @@ export default class TicoProgram {
 		return currVal;
 	}
 
-	private evaluateForLoopExpression(branch: BranchNode, node: ForLoopExpressionNode): any {
+	evaluateForLoopExpression(branch, node) {
 		let currVal = undefined;
 
 		this.evaluateExpression(branch, node.init);
@@ -383,7 +290,7 @@ export default class TicoProgram {
 		return currVal;
 	}
 
-	private evaluateSet(branch: BranchNode, node: SetNode): any {
+	evaluateSet(branch, node) {
 		const val = this.evaluateExpression(branch, node.value);
 		const setget = this.evaluateIdentifier(branch, node.id);
 
@@ -392,13 +299,13 @@ export default class TicoProgram {
 		return val;
 	}
 
-	private evaluateIdentifier(branch: BranchNode, node: Node): SetterGetterValue {
+	evaluateIdentifier(branch, node) {
 		let found = false;
 		let obj = branch.variables;
 		let key = '';
 
 		if (node.type === NodeType.Identifier) {
-			key = (node as IdentifierNode).id.match[0];
+			key = node.id.match[0];
 			let b = branch;
 
 			while (true) {
@@ -423,22 +330,22 @@ export default class TicoProgram {
 
 
 		return {
-			get(): any {
+			get() {
 				//if (!found) throw throwAtPos(node.line, node.column, `Couldn't find identifier "${key}"`);
 				if (!found) return undefined;
 				return obj[key];
 			},
-			set(v: any) {
+			set(v) {
 				obj[key] = v;
 			}
 		};
 	}
 
-	private evaluateFunctionCreate(branch: BranchNode, node: FunctionExpressionNode): any {
-		this.evaluateFunction(branch, node.id).create(node as BranchNode);
+	evaluateFunctionCreate(branch, node) {
+		this.evaluateFunction(branch, node.id).create(node);
 	}
 
-	private evaluateReturnStatement(branch: BranchNode, node: ReturnStatementNode): any {
+	evaluateReturnStatement(branch, node) {
 		let b = branch;
 		while (true) {
 			b.stopped = true;
@@ -451,7 +358,7 @@ export default class TicoProgram {
 		return this.evaluateExpression(branch, node.expression);
 	}
 
-	private evaluateBreakStatement(branch: BranchNode, node: BreakStatementNode): any {
+	evaluateBreakStatement(branch, node) {
 		let b = branch;
 		while (true) {
 			b.stopped = true;
@@ -463,18 +370,18 @@ export default class TicoProgram {
 		return undefined;
 	}
 
-	private evaluateFunctionCall(branch: BranchNode, node: FunctionCallNode): any {
+	evaluateFunctionCall(branch, node) {
 		const f = this.evaluateFunction(branch, node.id);
 		return f.call(node.args.map(v => this.evaluateExpression(branch, v)));
 	}
 
-	private evaluateFunction(branch: BranchNode, node: Node): FunctionValue {
+	evaluateFunction(branch, node) {
 		let found = false;
-		let obj: { [key: string]: FunctionExpressionNode | ((...args: any[]) => any) } = branch.functions;
+		let obj = branch.functions;
 		let key = '';
 
 		if (node.type === NodeType.Identifier) {
-			key = (node as IdentifierNode).id.match[0];
+			key = node.id.match[0];
 			let b = branch;
 
 			while (true) {
@@ -501,7 +408,7 @@ export default class TicoProgram {
 		const self = this;
 
 		return {
-			create(func: FunctionExpressionNode): void {
+			create(func) {
 				if (found) throw throwAtPos(node.line, node.column, `Identifier "${key}" already exists`);
 
 				func.args.forEach(arg => {
@@ -515,7 +422,7 @@ export default class TicoProgram {
 				func.parent = branch;
 				obj[key] = func;
 			},
-			call(args: any[]): any {
+			call(args) {
 				if (!found) throw throwAtPos(node.line, node.column, `Couldn't find identifer "${key}"`);
 				const f = obj[key];
 				if (typeof f === 'function') {
@@ -547,7 +454,7 @@ export default class TicoProgram {
 		};
 	}
 
-	private runBranch(branch: BranchNode): any {
+	runBranch(branch) {
 		let retValue = undefined;
 
 		for (const node of branch.children) {
@@ -559,35 +466,32 @@ export default class TicoProgram {
 		return retValue;
 	}
 
-	public run(
-		variables: { [key: string]: any } = {},
-		functions: { [key: string]: (...args: any[]) => any } = {}
-	): any {
+	run(variables = {},functions = {}) {
 		this.variables = {
 			...variables
 		};
 		this.functions = {
-			'write': (what: any) => {
+			'write': (what) => {
 				return process.stdout.write(unescapeString("" + what))
 			},
-			'writeLine': (what: any) => {
+			'writeLine': (what) => {
 				return process.stdout.write(unescapeString("" + what) + "\n")
 			},
-			'fg': (r: number, g: number, b: number) => {
+			'fg': (r, g, b) => {
 				return process.stdout.write(foreground([r, g, b]));
 			},
 			'fgReset': () => {
 				return process.stdout.write(foregroundReset());
 			},
-			'bg': (r: number, g: number, b: number) => {
+			'bg': (r, g, b) => {
 				return process.stdout.write(background([r, g, b]));
 			},
 			'bgReset': () => {
 				return process.stdout.write(backgroundReset());
 			},
 			'color': (
-				r1: number, g1: number, b1: number,
-				r2: number, g2: number, b2: number
+				r1, g1, b1,
+				r2, g2, b2
 			) => {
 				return process.stdout.write(foreground([r1, g1, b1]) + background([r2, g2, b2]));
 			},
@@ -603,7 +507,7 @@ export default class TicoProgram {
 		return this.runBranch(this.mainBranch);
 	}
 
-	public static fromSourceCode(source: string): TicoProgram {
+	static fromSourceCode(source) {
 		const parser = new TicoParser();
 		return new TicoProgram(parser.parse(source));
 	}

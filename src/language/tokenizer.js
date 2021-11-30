@@ -1,8 +1,4 @@
-
-export type TokenDefinition = { type: any, regex: RegExp, ignore: boolean };
-export type Token = { type: any, match: RegExpMatchArray, start: number, end: number, line: number, column: number };
-
-export function throwAtPos(line: number, column: number, msg: string) {
+export function throwAtPos(line, column, msg) {
 	const e = new SyntaxError(`At line ${line + 1} column ${column + 1}: ${msg}`);
 	return e;
 }
@@ -12,42 +8,7 @@ export function throwAtPos(line: number, column: number, msg: string) {
  * a source string into tokens.
  */
 export default class Tokenizer {
-	/**
-	 * Skips tokens to be ignored, turn this off if want to use these ignored tokens for
-	 * syntax highlighting, for example
-	 */
-	public skipIgnore: boolean;
-	/**
-	 * Array containing all token definitions, identified by it's type and contains regex expression and
-	 * ignore flag.
-	 */
-	private tokenDefs: TokenDefinition[];
-	/**
-	 * The current source being tokenized
-	 */
-	private source: string;
-	/**
-	 * The length of the current source being tokenized
-	 */
-	private sourceLength: number;
-	/**
-	 * The source string cursor, points at a character on the position of this cursor
-	 */
-	private cursor: number;
-	/**
-	 * All the tokens from the tokenization step
-	 */
-	private tokens: Token[];
-	/**
-	 * Total number of tokens from the tokenization step
-	 */
-	private numTokens: number;
-	/**
-	 * Cursor that points at a token
-	 */
-	private tokenCursor: number;
-
-	public constructor() {
+	constructor() {
 		this.skipIgnore = true;
 		this.tokenDefs = [];
 		this.source = "";
@@ -61,7 +22,7 @@ export default class Tokenizer {
 	 * @param {RegExp} regex - The regex expression used to tokenize this token
 	 * @param {boolean} [ignore=false] - Should this token be ignored? Use this for whitespaces or comments
 	 */
-	public addTokenDefinition(type: any, regex: RegExp, ignore: boolean = false): void {
+	addTokenDefinition(type, regex, ignore = false) {
 		regex = new RegExp(`^${regex.source}`);
 		this.tokenDefs.push({ type, regex, ignore });
 	}
@@ -70,7 +31,7 @@ export default class Tokenizer {
 	 * Initializes the tokenization step
 	 * @param {string} source - The actual source code used to tokenize
 	 */
-	private init(source: string): void {
+	init(source) {
 		this.source = source;
 		this.sourceLength = source.length;
 		this.cursor = 0;
@@ -83,7 +44,7 @@ export default class Tokenizer {
 	 * Is the tokenization step reached EOF?
 	 * @returns {boolean} Reached EOF?
 	 */
-	private EOF(): boolean {
+	EOF() {
 		return this.cursor >= this.sourceLength;
 	}
 
@@ -91,16 +52,16 @@ export default class Tokenizer {
 	 * Gets the next token from the source string cursor
 	 * @returns {Token} The next token
 	 */
-	private getNextToken(): Token {
+	getNextToken() {
 		const str = this.source.slice(this.cursor);
-		let tk: Token = null;
-		let tkIgnore: boolean = false;
+		let tk = null;
+		let tkIgnore = false;
 
 		for (const { type, regex, ignore } of this.tokenDefs) {
 			const matched = regex.exec(str);
 			if (matched) {
 				matched.index = this.cursor;
-				const newToken: Token = {
+				const newToken = {
 					type,
 					match: matched,
 					start: this.cursor,
@@ -164,7 +125,7 @@ export default class Tokenizer {
 	 * @param {number} pos - The cursor position
 	 * @returns {[number, number]} Line and column of the cursor
 	 */
-	public getCursorInfo(pos: number): [number, number] {
+	getCursorInfo(pos) {
 		let [cursorLine, cursorColumn] = [0, -1];
 		for (let i = 0; i <= pos; i++) {
 			const c = this.source[i];
@@ -182,7 +143,7 @@ export default class Tokenizer {
 	 * Main tokenization function, tokenizes the entire source string
 	 * @param {string} str - The source string
 	 */
-	public tokenize(str: string): void {
+	tokenize(str) {
 		this.init(str);
 		while (true) {
 			const tk = this.getNextToken();
@@ -196,7 +157,7 @@ export default class Tokenizer {
 	 * Returns the current token cursor position
 	 * @returns {number} position
 	 */
-	public tkCursor(): number { return this.tokenCursor; }
+	tkCursor() { return this.tokenCursor; }
 
 	/**
 	 * Returns the current token that matches the type or null if it don't match.
@@ -204,7 +165,7 @@ export default class Tokenizer {
 	 * @param {any} type - The token type to match 
 	 * @returns {Token} The current token or null
 	 */
-	public tk(type: any): Token {
+	tk(type) {
 		if (this.tokenCursor >= this.numTokens) return null;
 
 		if (this.tokens[this.tokenCursor].type === type) {
@@ -220,27 +181,27 @@ export default class Tokenizer {
 	 * Returns the current token
 	 * @returns {Token} The current token
 	 */
-	public currTk(): Token {
+	currTk() {
 		return this.tokens[this.tokenCursor];
 	}
 
 	/**
 	 * Go back one pos of the token cursor
 	 */
-	public tkBack() { this.tokenCursor -= 1; }
+	tkBack() { this.tokenCursor -= 1; }
 
 	/**
 	 * Returns the token position to the position provided
 	 * @param {number} pos - The position to return 
 	 * @returns {null}
 	 */
-	public tkRet(pos: number): null { this.tokenCursor = pos; return null; }
+	tkRet(pos) { this.tokenCursor = pos; return null; }
 
 	/**
 	 * Throws the error message at the current token position
 	 * @param {string} msg - The error message
 	 */
-	public tkThrowErr(msg: string) {
+	tkThrowErr(msg) {
 		const currTk = this.currTk();
 		throw new SyntaxError(`At line ${currTk.line + 1} column ${currTk.column + 1}: ${msg}`);
 	}
@@ -249,13 +210,13 @@ export default class Tokenizer {
 	 * Gets the number of tokens left to use
 	 * @returns {number} The number of left tokens
 	 */
-	public tokensLeft(): number { return this.numTokens - this.tokenCursor; }
+	tokensLeft() { return this.numTokens - this.tokenCursor; }
 
 	/**
 	 * Returns a copy of the tokenized tokens
 	 * @returns {Token[]} The array of tokens copy
 	 */
-	public getTokens(): Token[] { return [...this.tokens]; }
+	getTokens() { return [...this.tokens]; }
 
-	public sourceSubstr(start: number, end: number): string { return this.source.slice(start, end); }
+	sourceSubstr(start, end) { return this.source.slice(start, end); }
 }

@@ -1,12 +1,10 @@
-import TicoParser, { StringifyOptions } from "../language/ticoParser";
-import TicoProgram, { } from "../runtime/tico";
-import { TreefyOptions } from "../utils";
+import TicoParser from "../language/ticoParser.js";
+import TicoProgram from "../runtime/tico.js";
 
 describe('testing tico parser', () => {
 	const parser = new TicoParser();
-	const indent = "  ";
-	const strigifyOptions: StringifyOptions = { showPosition: false };
-	const treefyOptions: TreefyOptions = { colors: false };
+	const strigifyOptions = { showPosition: false };
+	const treefyOptions = { colors: false };
 
 	test('Parses empty string', () => {
 		const node = parser.parse("");
