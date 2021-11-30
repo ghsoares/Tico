@@ -89,9 +89,6 @@ export const TokenEnum = {
 	ExtraMax: iota(true),
 }
 
-
-console.log(TokenEnum);
-
 export default class TicoTokenizer extends Tokenizer {
 	constructor() {
 		super();
