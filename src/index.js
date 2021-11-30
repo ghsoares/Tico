@@ -1,9 +1,9 @@
-import TicoParser from "./language/ticoParser.js";
+import TicoParser from "./language/ticoParser";
+import TicoTokenizer from "./language/ticoTokenizer";
+import TicoProgram from "./runtime/tico";
 
-
-
-const parser = new TicoParser();
-const main = parser.parse("1 + 2");
-const ast = TicoParser.stringify(main);
-
-console.log(ast);
+export {
+	TicoParser,
+	TicoTokenizer,
+	TicoProgram
+}
