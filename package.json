@@ -3,10 +3,10 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.ts",
+  "type": "module",
   "scripts": {
     "dev": "doskey /listsize=0 && nodemon",
-    "test": "jest --watch",
-    "compile": "tsc"
+    "test": "jest --watch"
   },
   "keywords": [],
   "author": "",
