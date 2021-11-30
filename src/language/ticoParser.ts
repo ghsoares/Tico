@@ -15,6 +15,7 @@ import {
 	ElseExpressionNode,
 	WhileLoopExpressionNode,
 	BreakStatementNode,
+	ForLoopExpressionNode,
 } from "../runtime/tico";
 import { treefy, TreefyOptions } from "../utils";
 import TicoTokenizer, { TokenEnum } from "./ticoTokenizer";
@@ -365,6 +366,43 @@ export default class TicoParser {
 		return branch;
 	}
 
+	private forExpression() {
+		const tkPos = this.tokenizer.tkCursor();
+
+		const forKey = this.tokenizer.tk(TokenEnum.KeywordFor);
+		if (!forKey) { return this.tokenizer.tkRet(tkPos); }
+
+		if (!this.tokenizer.tk(TokenEnum.SymbolParOpen))
+			this.tokenizer.tkThrowErr(`Expected "("`);
+		
+		const init = this.expression();
+		if (!init)
+			this.tokenizer.tkThrowErr(`Expected expression`);
+
+		const condition = this.expression();
+		if (!condition)
+			this.tokenizer.tkThrowErr(`Expected expression`);
+
+		const iterate = this.expression();
+		if (!iterate)
+			this.tokenizer.tkThrowErr(`Expected expression`);
+
+		if (!this.tokenizer.tk(TokenEnum.SymbolParClose))
+			this.tokenizer.tkThrowErr(`Expected "("`);
+		
+		const branch = this.branch() as ForLoopExpressionNode;
+
+		branch.type = NodeType.ForLoopExpression;
+		branch.init = init;
+		branch.condition = condition;
+		branch.iterate = iterate;
+		branch.start = forKey.start;
+		branch.line = forKey.line;
+		branch.column = forKey.column;
+
+		return branch;
+	}
+
 	private variableSet(): Node {
 		const tkPos = this.tokenizer.tkCursor();
 
@@ -497,7 +535,8 @@ export default class TicoParser {
 			this.returnStatement() ||
 			this.breakStatement() ||
 			this.ifExpression() ||
-			this.whileExpression() ||
+			this.whileLoopExpression() ||
+			this.forExpression() ||
 			this.binaryExpression() ||
 			this.expressionMember();
 
@@ -678,6 +717,22 @@ export default class TicoParser {
 					if (showPosition) tree['position'] = position();
 
 					tree['condition'] = getTree(nd.condition);
+					if (nd.children.length === 0) {
+						tree['scope'] = 'empty';
+					} else {
+						tree['scope'] = nd.children.map(c => getTree(c));
+					}
+				} break;
+				case NodeType.ForLoopExpression: {
+					const nd = n as ForLoopExpressionNode;
+
+					tree['title'] = "ForLoopExpressionNode";
+					if (showPosition) tree['position'] = position();
+
+					tree['init'] = getTree(nd.init);
+					tree['condition'] = getTree(nd.condition);
+					tree['iterate'] = getTree(nd.iterate);
+
 					if (nd.children.length === 0) {
 						tree['scope'] = 'empty';
 					} else {

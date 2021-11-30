@@ -148,6 +148,9 @@ export default class TicoProgram {
 			case NodeType.WhileLoopExpression: {
 				return this.evaluateWhileLoopExpression(branch, node as WhileLoopExpressionNode);
 			}
+			case NodeType.ForLoopExpression: {
+				return this.evaluateForLoopExpression(branch, node as ForLoopExpressionNode);
+			}
 			case NodeType.Set: {
 				return this.evaluateSet(branch, node as SetNode);
 			}
@@ -353,6 +356,26 @@ export default class TicoProgram {
 			node.functions = {};
 			currVal = this.runBranch(node);
 
+			isTrue = this.evaluateExpression(branch, node.condition);
+			if (node.stopped) break;
+		}
+
+		return currVal;
+	}
+
+	private evaluateForLoopExpression(branch: BranchNode, node: ForLoopExpressionNode): any {
+		let currVal = undefined;
+
+		this.evaluateExpression(branch, node.init);
+
+		let isTrue = this.evaluateExpression(branch, node.condition);
+		while (isTrue) {
+			node.parent = branch;
+			node.variables = {};
+			node.functions = {};
+			currVal = this.runBranch(node);
+
+			this.evaluateExpression(branch, node.iterate);
 			isTrue = this.evaluateExpression(branch, node.condition);
 			if (node.stopped) break;
 		}
