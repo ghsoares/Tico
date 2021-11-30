@@ -26,6 +26,8 @@ export const NodeType = {
 	Max: iota(true),
 }
 
+console.log(NodeType);
+
 export default class TicoProgram {
 	/*
 	private mainBranch: BranchNode;

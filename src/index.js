@@ -1,6 +1,6 @@
-import TicoParser from "./language/ticoParser";
-import TicoTokenizer from "./language/ticoTokenizer";
-import TicoProgram from "./runtime/tico";
+import TicoParser from "./language/ticoParser.js";
+import TicoTokenizer from "./language/ticoTokenizer.js";
+import TicoProgram from "./runtime/tico.js";
 
 export {
 	TicoParser,
