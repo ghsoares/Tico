@@ -8,3 +8,5 @@ declare class TicoTokenizer extends Tokenizer {
 	private addSymbols(): void;
 	private addExtra(): void;
 }
+
+export default TicoTokenizer;

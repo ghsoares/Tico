@@ -1,8 +1,8 @@
-import TicoProgram from "../runtime/tico";
-import Tokenizer from "./tokenizer";
+import { TicoProgram, TicoTokenizer } from "..";
+import { TreefyOptions } from "../utils";
 
 declare class TicoParser {
-	private tokenizer: Tokenizer;
+	private tokenizer: TicoTokenizer;
 
 	private literal(): Object;
 	private identifier(): Object;
@@ -29,7 +29,6 @@ declare class TicoParser {
 
 	public parse(source: string): Object;
 
-	public static stringify(node: Object, options, treefyOptions): TicoProgram;
+	public static stringify(node: Object, options: Object, treefyOptions: TreefyOptions): TicoProgram;
 }
 
-export default TicoParser;

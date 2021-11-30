@@ -14,24 +14,37 @@ declare type TreefyOptions = {
 	booleanColor?: [Color, Color]
 };
 
-export function iota(reset: boolean = false): number;
+declare function iota(reset: boolean): number;
 
-export function treefy(tree: Object, options: TreefyOptions): string;
+declare function treefy(tree: Object, options: TreefyOptions): string;
 
-export function foreground(rgb: Color): string;
+declare function foreground(rgb: Color): string;
 
-export function foregroundReset(): string;
+declare function foregroundReset(): string;
 
-export function background(rgb: Color): string;
+declare function background(rgb: Color): string;
 
-export function backgroundReset(): string;
+declare function backgroundReset(): string;
 
-export function colorfy(str: string, fg: Color, bg: Color): string;
+declare function colorfy(str: string, fg: Color, bg: Color): string;
 
-export function fromHex(hex: string): Color;
+declare function fromHex(hex: string): Color;
 
-export function unescapeString(str: string): String;
+declare function unescapeString(str: string): String;
 
-export function getType(v: any): string;
+declare function getType(v: any): string;
 
-
+export {
+	Color,
+	TreefyOptions,
+	iota,
+	treefy,
+	foreground,
+	foregroundReset,
+	background,
+	backgroundReset,
+	colorfy,
+	fromHex,
+	unescapeString,
+	getType
+}
