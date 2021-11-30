@@ -1,5 +1,5 @@
 import TicoParser from "../language/ticoParser";
-import TicoProgram from "../runtime/tico";
+import TicoProgram, { BranchNode } from "../runtime/tico";
 
 let currentRunningProgram: TicoProgram = null;
 
@@ -12,11 +12,10 @@ self.onmessage = (e: any) => {
 
 			const parser = new TicoParser();
 			const main = parser.parse(source);
-			const program = new TicoProgram(main);
 
 			self.postMessage({
 				type: 'SOURCE_COMPILED',
-				program
+				main
 			});
 		} break;
 		case 'RUN_PROGRAM': {
@@ -25,14 +24,16 @@ self.onmessage = (e: any) => {
 			}
 
 			const { 
-				program,
+				main,
 				ctxVariables = {},
 				ctxFunctions = {} 
 			}: { 
-				program: TicoProgram,
+				main: BranchNode,
 				ctxVariables: {[key: string]: any},
 				ctxFunctions: {[key: string]: (...args: any[]) => any},
 			} = e;
+
+			const program: TicoProgram = new TicoProgram(main);
 
 			const variables = {
 
