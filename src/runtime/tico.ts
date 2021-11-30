@@ -561,13 +561,12 @@ export default class TicoProgram {
 
 	public run(
 		variables: { [key: string]: any } = {},
-		functions: { [key: string]: any } = () => { }
+		functions: { [key: string]: (...args: any[]) => any } = {}
 	): any {
 		this.variables = {
 			...variables
 		};
 		this.functions = {
-			...functions,
 			'write': (what: any) => {
 				return process.stdout.write(unescapeString("" + what))
 			},
@@ -594,7 +593,8 @@ export default class TicoProgram {
 			},
 			'colorReset': () => {
 				return process.stdout.write(foregroundReset() + backgroundReset());
-			}
+			},
+			...functions,
 		};
 		this.mainBranch.variables = {};
 		this.mainBranch.functions = {};
