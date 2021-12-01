@@ -1,95 +1,96 @@
-import Tokenizer from "./tokenizer";
+import Tokenizer from "./tokenizer.js";
+import {iota} from "../utils/index.js";
 
-export enum TokenEnum {
+export const TokenEnum = {
 	// Ignored tokens
-	IgnoreMin,
+	IgnoreMin: iota(),
 
-	IgnoreMultilineComment,
-	IgnoreComment,
-	IgnoreWhitespace,
+	IgnoreMultilineComment: iota(),
+	IgnoreComment: iota(),
+	IgnoreWhitespace: iota(),
 
-	IgnoreMax,
+	IgnoreMax: iota(),
 
 	// Keywords
-	KeywordMin,
+	KeywordMin: iota(),
 
-	KeywordFunction,
-	KeywordReturn,
-	KeywordIf,
-	KeywordElse,
-	KeywordElif,
-	KeywordWhile,
-	KeywordFor,
-	KeywordBreak,
+	KeywordFunction: iota(),
+	KeywordReturn: iota(),
+	KeywordIf: iota(),
+	KeywordElse: iota(),
+	KeywordElif: iota(),
+	KeywordWhile: iota(),
+	KeywordFor: iota(),
+	KeywordBreak: iota(),
 
-	KeywordMax,
+	KeywordMax: iota(),
 
 	// Literals
-	LiteralMin,
+	LiteralMin: iota(),
 
-	LiteralNumber,
-	LiteralBigInt,
-	LiteralString,
-	LiteralBoolean,
-	LiteralNull,
-	LiteralUndefined,
+	LiteralNumber: iota(),
+	LiteralBigInt: iota(),
+	LiteralString: iota(),
+	LiteralBoolean: iota(),
+	LiteralNull: iota(),
+	LiteralUndefined: iota(),
 
-	LiteralMax,
+	LiteralMax: iota(),
 
 	// Binary operators
-	BinaryOpMin,
+	BinaryOpMin: iota(),
 
-	BinaryOpPlus,
-	BinaryOpMinus,
-	BinaryOpStar,
-	BinaryOpStarStar,
-	BinaryOpSlash,
-	BinaryOpSlashSlash,
-	BinaryOpModulus,
-	BinaryOpModulusModulus,
+	BinaryOpPlus: iota(),
+	BinaryOpMinus: iota(),
+	BinaryOpStar: iota(),
+	BinaryOpStarStar: iota(),
+	BinaryOpSlash: iota(),
+	BinaryOpSlashSlash: iota(),
+	BinaryOpModulus: iota(),
+	BinaryOpModulusModulus: iota(),
 	
-	BinaryOpMax,
+	BinaryOpMax: iota(),
 
 	// Conditional Operators
-	ConditionalOpMin,
+	ConditionalOpMin: iota(),
 
-	ConditionalOpGreater,
-	ConditionalOpLess,
-	ConditionalOpGreaterEqual,
-	ConditionalOpLessEqual,
-	ConditionalOpEqual,
-	ConditionalOpNotEqual,
-	ConditionalAnd,
-	ConditionalOr,
+	ConditionalOpGreater: iota(),
+	ConditionalOpLess: iota(),
+	ConditionalOpGreaterEqual: iota(),
+	ConditionalOpLessEqual: iota(),
+	ConditionalOpEqual: iota(),
+	ConditionalOpNotEqual: iota(),
+	ConditionalAnd: iota(),
+	ConditionalOr: iota(),
 
-	ConditionalOpMax,
+	ConditionalOpMax: iota(),
 
 	// Symbols
-	SymbolMin,
+	SymbolMin: iota(),
 	
-	SymbolEquals,
-	SymbolParOpen,
-	SymbolParClose,
-	SymbolCurlyBracketOpen,
-	SymbolCurlyBracketClose,
-	SymbolBracketOpen,
-	SymbolBracketClose,
-	SymbolComma,
-	SymbolExclamationMark,
-	SymbolSemicolon,
+	SymbolEquals: iota(),
+	SymbolParOpen: iota(),
+	SymbolParClose: iota(),
+	SymbolCurlyBracketOpen: iota(),
+	SymbolCurlyBracketClose: iota(),
+	SymbolBracketOpen: iota(),
+	SymbolBracketClose: iota(),
+	SymbolComma: iota(),
+	SymbolExclamationMark: iota(),
+	SymbolSemicolon: iota(),
 	
-	SymbolMax,
+	SymbolMax: iota(),
 
 	// Extra
-	ExtraMin,
+	ExtraMin: iota(),
 
-	ExtraIdentifier,
+	ExtraIdentifier: iota(),
 
-	ExtraMax,
+	ExtraMax: iota(true),
 }
 
 export default class TicoTokenizer extends Tokenizer {
-	public constructor() {
+	constructor() {
 		super();
 
 		this.addTokenDefinition(
@@ -116,7 +117,7 @@ export default class TicoTokenizer extends Tokenizer {
 		this.addExtra();
 	}
 
-	private addKeywords(): void {
+	addKeywords() {
 		const expectedNumTokens = 8;
 		if (TokenEnum.KeywordMax - TokenEnum.KeywordMin - 1 !== expectedNumTokens) {
 			throw new Error(`New keywords added, update this function`);
@@ -158,7 +159,7 @@ export default class TicoTokenizer extends Tokenizer {
 		}
 	}
 
-	private addLiterals(): void {
+	addLiterals() {
 		const expectedNumTokens = 6;
 		if (TokenEnum.LiteralMax - TokenEnum.LiteralMin - 1 !== expectedNumTokens) {
 			throw new Error(`New literals added, update this function`);
@@ -204,7 +205,7 @@ export default class TicoTokenizer extends Tokenizer {
 		}
 	}
 
-	private addBinaryOps(): void {
+	addBinaryOps() {
 		const expectedNumTokens = 8;
 		if (TokenEnum.BinaryOpMax - TokenEnum.BinaryOpMin - 1 !== expectedNumTokens) {
 			throw new Error(`New binary operators added, update this function`);
@@ -246,7 +247,7 @@ export default class TicoTokenizer extends Tokenizer {
 		}
 	}
 
-	private addConditionalOps(): void {
+	addConditionalOps() {
 		const expectedNumTokens = 8;
 		if (TokenEnum.ConditionalOpMax - TokenEnum.ConditionalOpMin - 1 !== expectedNumTokens) {
 			throw new Error(`New binary operators added, update this function`);
@@ -289,7 +290,7 @@ export default class TicoTokenizer extends Tokenizer {
 		}
 	}
 
-	private addSymbols(): void {
+	addSymbols() {
 		const expectedNumTokens = 10;
 		if (TokenEnum.SymbolMax - TokenEnum.SymbolMin - 1 !== expectedNumTokens) {
 			throw new Error(`New symbols added, update this function`);
@@ -337,7 +338,7 @@ export default class TicoTokenizer extends Tokenizer {
 		}
 	}
 
-	private addExtra(): void {
+	addExtra() {
 		const expectedNumTokens = 1;
 		if (TokenEnum.ExtraMax - TokenEnum.ExtraMin - 1 !== expectedNumTokens) {
 			throw new Error(`New extra tokens added, update this function`);

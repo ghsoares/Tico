@@ -6,25 +6,19 @@ const BRANCH_STR = [
 	"│",
 ];
 
-type Color = [number, number, number];
+let iotaState = 0;
 
-export type TreefyOptions = {
-	colors?: boolean;
-	indentSize?: number;
+export function iota(reset = false) {
+	let v = iotaState;
+	if (reset) {
+		iotaState = 0;	
+	} else {
+		iotaState++;
+	}
+	return v;
+}
 
-	// Tree colors
-	arrowsColor?: [Color, Color];
-	titleColor?: [Color, Color];
-	keyColor?: [Color, Color];
-
-	// Literal colors
-	numberColor?: [Color, Color];
-	bigIntColor?: [Color, Color];
-	stringColor?: [Color, Color];
-	booleanColor?: [Color, Color];
-};
-
-export function treefy(tree: Object, options: TreefyOptions = {}): string {
+export function treefy(tree, options = {}) {
 	const {
 		colors 		 =	true,
 		indentSize	 = 	2,
@@ -37,7 +31,7 @@ export function treefy(tree: Object, options: TreefyOptions = {}): string {
 		booleanColor = 	[fromHex("#ff516d"), fromHex(null)]
 	} = options;
 
-	const applyColor = (str: string, c: [Color, Color]) => colors ? colorfy(str, c[0], c[1]) : str;
+	const applyColor = (str, c) => colors ? colorfy(str, c[0], c[1]) : str;
 	
 	const arrows = [
 		applyColor("├", arrowsColor),
@@ -45,7 +39,7 @@ export function treefy(tree: Object, options: TreefyOptions = {}): string {
 		applyColor("│", arrowsColor),
 		applyColor("─".repeat(indentSize), arrowsColor)
 	];
-	const arrow = (type: number): string => {
+	const arrow = (type) => {
 		switch (type) {
 			case 0:
 				return arrows[0] + arrows[3];
@@ -57,9 +51,9 @@ export function treefy(tree: Object, options: TreefyOptions = {}): string {
 		return null;
 	}
 
-	const indent = (lvl: number) => " ".repeat(lvl * (indentSize + 1));
+	const indent = (lvl) => " ".repeat(lvl * (indentSize + 1));
 
-	const connect = (str: string, lvl: number, skipFirst: boolean = false): string => {
+	const connect = (str, lvl, skipFirst = false) => {
 		const lines = str.split("\n");
 
 		return lines.map((line, idx) => {
@@ -72,7 +66,7 @@ export function treefy(tree: Object, options: TreefyOptions = {}): string {
 		}).join("\n");
 	};
 
-	const treefyRec = (obj: Object, lvl: number): string => {
+	const treefyRec = (obj, lvl) => {
 		if (obj === null) return "null\n";
 
 		let str = "";
@@ -157,7 +151,7 @@ export function treefy(tree: Object, options: TreefyOptions = {}): string {
 	return s.slice(0, s.length - 1);
 }
 
-export function foreground(rgb: Color): string {
+export function foreground(rgb) {
 	let [r, g, b] = rgb;
 
 	r = r < 0 ? 0 : r > 255 ? 255 : r;
@@ -167,11 +161,11 @@ export function foreground(rgb: Color): string {
 	return `\x1b[38;2;${r};${g};${b}m`;
 }
 
-export function foregroundReset(): string {
+export function foregroundReset() {
 	return `\x1b[37m`;
 }
 
-export function background(rgb: Color): string {
+export function background(rgb) {
 	let [r, g, b] = rgb;
 
 	r = r < 0 ? 0 : r > 255 ? 255 : r;
@@ -181,11 +175,11 @@ export function background(rgb: Color): string {
 	return `\x1b[48;2;${r};${g};${b}m`;
 }
 
-export function backgroundReset(): string {
+export function backgroundReset() {
 	return `\x1b[40m`;
 }
 
-export function colorfy(str: string, fg: Color, bg: Color = null): string {
+export function colorfy(str, fg, bg = null) {
 	let ss = "";
 
 	ss += foreground(fg);
@@ -201,7 +195,7 @@ export function colorfy(str: string, fg: Color, bg: Color = null): string {
 	return ss;
 }
 
-export function fromHex(hex: string): Color {
+export function fromHex(hex) {
 	if (hex === null) return null;
 
 	const m = (/#?([0-9a-fA-F]{1,2})([0-9a-fA-F]{1,2})([0-9a-fA-F]{1,2})/).exec(hex);
@@ -218,7 +212,7 @@ export function fromHex(hex: string): Color {
 	}
 }
 
-export function unescapeString(str: string): string {
+export function unescapeString(str) {
 	// Replace basic escape characters
 	str = str	
 	.replace(/\\'/g, 	"\'")
@@ -234,15 +228,14 @@ export function unescapeString(str: string): string {
 	;
 
 	// Hexadecimal characters
-	str = str.replace(/\\x([0-9a-fA-F][0-9a-fA-F])/g, (match, d: string) => {
-
+	str = str.replace(/\\x([0-9a-fA-F][0-9a-fA-F])/g, (match, d) => {
 		return String.fromCharCode(parseInt(d, 16));
 	});
 
 	return str;
 }
 
-export function getType(v: any): string {
+export function getType(v) {
 	if (typeof v === 'object') {
 		if (v.constructor) {
 			return v.constructor.name;
