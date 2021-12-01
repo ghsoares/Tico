@@ -1,3 +1,12 @@
-import TicoParser, {} from "./dist/language/ticoParser.js";
+import TicoParser from "./dist/language/ticoParser";
+import TicoTokenizer, { TokenEnum } from "./dist/language/ticoTokenizer";
+import TicoProgram from "./dist/runtime/tico";
 
-const parser = new TicoParser();
+export {
+	TicoTokenizer,
+	TokenEnum,
+	TicoParser,
+	TicoProgram
+};
+
+
