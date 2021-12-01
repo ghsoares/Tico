@@ -29,12 +29,12 @@ export default class TicoParser {
 	private tokenizer: TicoTokenizer;
 
 	private literal(): Node {
-		const literal = 
-			this.tokenizer.tk(TokenEnum.LiteralNumber) 		||
-			this.tokenizer.tk(TokenEnum.LiteralBigInt) 		||
-			this.tokenizer.tk(TokenEnum.LiteralString) 		||
-			this.tokenizer.tk(TokenEnum.LiteralBoolean) 	||
-			this.tokenizer.tk(TokenEnum.LiteralNull) 		||
+		const literal =
+			this.tokenizer.tk(TokenEnum.LiteralNumber) ||
+			this.tokenizer.tk(TokenEnum.LiteralBigInt) ||
+			this.tokenizer.tk(TokenEnum.LiteralString) ||
+			this.tokenizer.tk(TokenEnum.LiteralBoolean) ||
+			this.tokenizer.tk(TokenEnum.LiteralNull) ||
 			this.tokenizer.tk(TokenEnum.LiteralUndefined)
 			;
 
@@ -180,22 +180,22 @@ export default class TicoParser {
 	}
 
 	private expressionMember(): Node {
-		return  this.negateExpression() ||
-				this.wrappedExpression() ||
-				this.functionCall() ||
-				this.identifier() ||
-				this.literal()
-				;
+		return this.negateExpression() ||
+			this.wrappedExpression() ||
+			this.functionCall() ||
+			this.identifier() ||
+			this.literal()
+			;
 	}
 
 	private binaryExpressionRecursive(left: Node): Node {
 		const operators = [
 			// Binary
-			[TokenEnum.BinaryOpStarStar],
-
 			[TokenEnum.BinaryOpSlash,
 			TokenEnum.BinaryOpStar,
 			TokenEnum.BinaryOpModulus],
+
+			[TokenEnum.BinaryOpStarStar],
 			
 			[TokenEnum.BinaryOpSlashSlash,
 			TokenEnum.BinaryOpModulusModulus],
@@ -242,17 +242,19 @@ export default class TicoParser {
 				column: l.column
 			} as BinaryExpressionNode;
 
-			for (let i = operators.length - 1; i > id; i--) {
-				node = operator(node, i);
-			}
 			node = operator(node, id);
 
 			return node;
 		}
 
 		let expr = left;
-		for (let i = 0; i < operators.length; i++) {
-			expr = operator(expr, i);
+		let prev = left;
+		while (true) {
+			for (let i = 0; i < operators.length; i++) {
+				expr = operator(expr, i);
+			}
+			if (expr === prev) break;
+			prev = expr;
 		}
 
 		if (expr === left) return null;
@@ -284,7 +286,7 @@ export default class TicoParser {
 		const expr = this.expression();
 		if (!expr)
 			this.tokenizer.tkThrowErr("Expected expression");
-		
+
 		if (!this.tokenizer.tk(TokenEnum.SymbolBracketClose))
 			this.tokenizer.tkThrowErr(`Expected ")"`);
 
@@ -392,7 +394,7 @@ export default class TicoParser {
 
 		if (!this.tokenizer.tk(TokenEnum.SymbolParOpen))
 			this.tokenizer.tkThrowErr(`Expected "("`);
-		
+
 		const init = this.expression();
 		if (!init)
 			this.tokenizer.tkThrowErr(`Expected expression`);
@@ -407,7 +409,7 @@ export default class TicoParser {
 
 		if (!this.tokenizer.tk(TokenEnum.SymbolParClose))
 			this.tokenizer.tkThrowErr(`Expected "("`);
-		
+
 		const branch = this.branch() as ForLoopExpressionNode;
 
 		branch.type = NodeType.ForLoopExpression;
