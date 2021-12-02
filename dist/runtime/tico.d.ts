@@ -165,6 +165,8 @@ export default class TicoProgram {
     private execBatchStart;
     private execBatchMS;
     private waitMS;
+    private onStdout;
+    private onStderr;
     constructor(main: BranchNode);
     private evaluateExpression;
     private evaluateBinaryExpression;
@@ -182,6 +184,8 @@ export default class TicoProgram {
     private runBranch;
     setExecBatchDuration(ms: number): void;
     setWaitDuration(ms: number): void;
+    setStdout(callback: (what: any) => any): void;
+    setStderr(callback: (what: any) => any): void;
     run(variables?: TicoVariables, functions?: TicoFunctions): Promise<any>;
     static fromSourceCode(source: string): TicoProgram;
 }

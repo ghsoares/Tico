@@ -40,44 +40,52 @@ export default class TicoProgram {
             await wait(this.waitMS);
             this.execBatchStart = Date.now();
         }
-        switch (node.type) {
-            case NodeType.Literal: {
-                return node.value;
+        try {
+            switch (node.type) {
+                case NodeType.Literal: {
+                    return node.value;
+                }
+                case NodeType.BinaryExpression: {
+                    return await this.evaluateBinaryExpression(branch, node);
+                }
+                case NodeType.NegateExpression: {
+                    return await this.evaluateNegateExpression(branch, node);
+                }
+                case NodeType.IfExpression: {
+                    return await this.evaluateIfExpression(branch, node);
+                }
+                case NodeType.WhileLoopExpression: {
+                    return await this.evaluateWhileLoopExpression(branch, node);
+                }
+                case NodeType.ForLoopExpression: {
+                    return await this.evaluateForLoopExpression(branch, node);
+                }
+                case NodeType.Set: {
+                    return await this.evaluateSet(branch, node);
+                }
+                case NodeType.Identifier: {
+                    return (await this.evaluateIdentifier(branch, node)).get();
+                }
+                case NodeType.FunctionExpression: {
+                    return await this.evaluateFunctionCreate(branch, node);
+                }
+                case NodeType.ReturnStatement: {
+                    return await this.evaluateReturnStatement(branch, node);
+                }
+                case NodeType.BreakStatement: {
+                    return await this.evaluateBreakStatement(branch, node);
+                }
+                case NodeType.FunctionCall: {
+                    return await this.evaluateFunctionCall(branch, node);
+                }
+                default: throw throwAtPos(node.line, node.column, `Not implemented`);
             }
-            case NodeType.BinaryExpression: {
-                return await this.evaluateBinaryExpression(branch, node);
+        }
+        catch (e) {
+            if (this.onStderr) {
+                return this.onStderr(e);
             }
-            case NodeType.NegateExpression: {
-                return await this.evaluateNegateExpression(branch, node);
-            }
-            case NodeType.IfExpression: {
-                return await this.evaluateIfExpression(branch, node);
-            }
-            case NodeType.WhileLoopExpression: {
-                return await this.evaluateWhileLoopExpression(branch, node);
-            }
-            case NodeType.ForLoopExpression: {
-                return await this.evaluateForLoopExpression(branch, node);
-            }
-            case NodeType.Set: {
-                return await this.evaluateSet(branch, node);
-            }
-            case NodeType.Identifier: {
-                return (await this.evaluateIdentifier(branch, node)).get();
-            }
-            case NodeType.FunctionExpression: {
-                return await this.evaluateFunctionCreate(branch, node);
-            }
-            case NodeType.ReturnStatement: {
-                return await this.evaluateReturnStatement(branch, node);
-            }
-            case NodeType.BreakStatement: {
-                return await this.evaluateBreakStatement(branch, node);
-            }
-            case NodeType.FunctionCall: {
-                return await this.evaluateFunctionCall(branch, node);
-            }
-            default: throw throwAtPos(node.line, node.column, `Not implemented`);
+            return null;
         }
     }
     async evaluateBinaryExpression(branch, node) {
@@ -428,15 +436,27 @@ export default class TicoProgram {
     setWaitDuration(ms) {
         this.waitMS = ms;
     }
+    setStdout(callback) {
+        this.onStdout = callback;
+    }
+    setStderr(callback) {
+        this.onStderr = callback;
+    }
     async run(variables = {}, functions = {}) {
         this.variables = {
             ...variables
         };
         this.functions = {
             'write': (what) => {
+                if (this.onStdout) {
+                    return this.onStdout(what);
+                }
                 return process.stdout.write(unescapeString("" + what));
             },
             'writeLine': (what) => {
+                if (this.onStdout) {
+                    return this.onStdout(what);
+                }
                 return process.stdout.write(unescapeString("" + what) + "\n");
             },
             'fg': (r, g, b) => {

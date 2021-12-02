@@ -188,6 +188,8 @@ export default class TicoProgram {
 	private execBatchStart: number;
 	private execBatchMS: number;
 	private waitMS: number;
+	private onStdout: (msg: any) => any;
+	private onStderr: (msg: any) => any;
 
 	public constructor(main: BranchNode) {
 		this.mainBranch = main;
@@ -201,44 +203,51 @@ export default class TicoProgram {
 			this.execBatchStart = Date.now();
 		}
 
-		switch (node.type) {
-			case NodeType.Literal: {
-				return (node as LiteralNode).value;
+		try {
+			switch (node.type) {
+				case NodeType.Literal: {
+					return (node as LiteralNode).value;
+				}
+				case NodeType.BinaryExpression: {
+					return await this.evaluateBinaryExpression(branch, node as BinaryExpressionNode);
+				}
+				case NodeType.NegateExpression: {
+					return await this.evaluateNegateExpression(branch, node as NegateExpressionNode);
+				}
+				case NodeType.IfExpression: {
+					return await this.evaluateIfExpression(branch, node as IfExpressionNode);
+				}
+				case NodeType.WhileLoopExpression: {
+					return await this.evaluateWhileLoopExpression(branch, node as WhileLoopExpressionNode);
+				}
+				case NodeType.ForLoopExpression: {
+					return await this.evaluateForLoopExpression(branch, node as ForLoopExpressionNode);
+				}
+				case NodeType.Set: {
+					return await this.evaluateSet(branch, node as SetNode);
+				}
+				case NodeType.Identifier: {
+					return (await this.evaluateIdentifier(branch, node as IdentifierNode)).get();
+				}
+				case NodeType.FunctionExpression: {
+					return await this.evaluateFunctionCreate(branch, node as FunctionExpressionNode);
+				}
+				case NodeType.ReturnStatement: {
+					return await this.evaluateReturnStatement(branch, node as ReturnStatementNode);
+				}
+				case NodeType.BreakStatement: {
+					return await this.evaluateBreakStatement(branch, node as BreakStatementNode);
+				}
+				case NodeType.FunctionCall: {
+					return await this.evaluateFunctionCall(branch, node as FunctionCallNode);
+				}
+				default: throw throwAtPos(node.line, node.column, `Not implemented`);
 			}
-			case NodeType.BinaryExpression: {
-				return await this.evaluateBinaryExpression(branch, node as BinaryExpressionNode);
+		} catch (e) {
+			if (this.onStderr) {
+				return this.onStderr(e);
 			}
-			case NodeType.NegateExpression: {
-				return await this.evaluateNegateExpression(branch, node as NegateExpressionNode);
-			}
-			case NodeType.IfExpression: {
-				return await this.evaluateIfExpression(branch, node as IfExpressionNode);
-			}
-			case NodeType.WhileLoopExpression: {
-				return await this.evaluateWhileLoopExpression(branch, node as WhileLoopExpressionNode);
-			}
-			case NodeType.ForLoopExpression: {
-				return await this.evaluateForLoopExpression(branch, node as ForLoopExpressionNode);
-			}
-			case NodeType.Set: {
-				return await this.evaluateSet(branch, node as SetNode);
-			}
-			case NodeType.Identifier: {
-				return (await this.evaluateIdentifier(branch, node as IdentifierNode)).get();
-			}
-			case NodeType.FunctionExpression: {
-				return await this.evaluateFunctionCreate(branch, node as FunctionExpressionNode);
-			}
-			case NodeType.ReturnStatement: {
-				return await this.evaluateReturnStatement(branch, node as ReturnStatementNode);
-			}
-			case NodeType.BreakStatement: {
-				return await this.evaluateBreakStatement(branch, node as BreakStatementNode);
-			}
-			case NodeType.FunctionCall: {
-				return await this.evaluateFunctionCall(branch, node as FunctionCallNode);
-			}
-			default: throw throwAtPos(node.line, node.column, `Not implemented`);
+			return null;
 		}
 	}
 
@@ -641,6 +650,14 @@ export default class TicoProgram {
 		this.waitMS = ms;
 	}
 
+	public setStdout(callback: (what: any) => any) {
+		this.onStdout = callback;
+	}
+
+	public setStderr(callback: (what: any) => any) {
+		this.onStderr = callback;
+	}
+	
 	public async run(
 		variables: TicoVariables = {},
 		functions: TicoFunctions = {}
@@ -650,10 +667,16 @@ export default class TicoProgram {
 		};
 		this.functions = {
 			'write': (what: any) => {
+				if (this.onStdout) {
+					return this.onStdout(what);
+				}
 				return process.stdout.write(unescapeString("" + what))
 			},
 			'writeLine': (what: any) => {
-				return process.stdout.write(unescapeString("" + what) + "\n")
+				if (this.onStdout) {
+					return this.onStdout(what);
+				}
+				return process.stdout.write(unescapeString("" + what) + "\n");
 			},
 			'fg': (r: number, g: number, b: number) => {
 				return process.stdout.write(foreground([r, g, b]));

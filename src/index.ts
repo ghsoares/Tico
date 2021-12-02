@@ -6,6 +6,14 @@ import fs from "fs";
 const source = fs.readFileSync("src/test.tico", 'utf-8');
 const program = TicoProgram.fromSourceCode(source);
 
+program.setStdout(what => {
+	return process.stdout.write("" + what + "\n");
+});
+
+program.setStderr(what => {
+	return process.stderr.write("" + what + "\n");
+});
+
 const run = async() => {
 	process.stdout.write(await program.run() + "\n");
 }
