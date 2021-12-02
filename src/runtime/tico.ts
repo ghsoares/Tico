@@ -48,47 +48,83 @@ export type BranchNode = {
 	stopped?: boolean;
 } & Node;
 
+/**
+ * Binary expression node type, allowing recursive expression calculation
+ */
 export type BinaryExpressionNode = {
 	left: Node;
 	operator: Token;
 	right: Node;
 } & Node;
 
+/**
+ * Negate expression node type, negates the value from the expression
+ */
 export type NegateExpressionNode = {
 	expr: Node;
 } & Node;
 
+/**
+ * If expression node type, evaluates the condition and
+ * run the branch or next branch if any
+ */
 export type IfExpressionNode = {
 	condition: Node;
 	next?: Node;
 } & BranchNode;
 
+/**
+ * Else expression node type, this branch is run if the previous
+ * if/elif node condition were false
+ */
 export type ElseExpressionNode = {} & BranchNode;
 
+/**
+ * While loop expression node type, keeps running this branch while
+ * the condition is true
+ */
 export type WhileLoopExpressionNode = {
 	condition: Node;
 } & BranchNode;
 
+/**
+ * For loop expression node type, run the init node expression,
+ * keeps running while the condition is true and run the iterate node expression
+ */
 export type ForLoopExpressionNode = {
 	init: Node;
 	condition: Node;
 	iterate: Node;
 } & BranchNode;
 
+/**
+ * Literal node type, stores the raw and the value of the literal
+ */
 export type LiteralNode = {
 	value: any;
 	raw: Token;
 } & Node;
 
+/**
+ * Identifier node type, stores the id literal of a variable,
+ * searches for the id in the current scope or any of it's parent scopes.
+ */
 export type IdentifierNode = {
 	id: Token;
 } & Node;
 
+/**
+ * Set node type, sets the identifier to the value expression
+ */
 export type SetNode = {
 	id: IdentifierNode;
 	value: Node;
 } & Node;
 
+/**
+ * Function arg node, contains an individual argument of a function,
+ * can contain a static or non-static default value expression
+ */
 export type FunctionArgNode = {
 	id: IdentifierNode;
 	defaultValueExpression: Node;
@@ -96,17 +132,31 @@ export type FunctionArgNode = {
 	staticDefaultValue: boolean;
 } & Node;
 
+/**
+ * Function expression node, the main node to declare a function on runtime,
+ * contains the id and the arguments
+ */
 export type FunctionExpressionNode = {
 	id: IdentifierNode;
 	args: FunctionArgNode[];
 } & BranchNode;
 
+/**
+ * Return statement node, returns the expression from a function or exits the main
+ * program early.
+ */
 export type ReturnStatementNode = {
 	expression: Node;
 } & Node;
 
+/**
+ * Break statement node, breaks a running loop
+ */
 export type BreakStatementNode = {} & Node;
 
+/**
+ * Function call node, calls a function identified by id and provides the argument expressions
+ */
 export type FunctionCallNode = {
 	id: IdentifierNode;
 	args: Node[];
