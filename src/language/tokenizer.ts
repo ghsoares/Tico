@@ -1,3 +1,4 @@
+import { lineColumnFromString } from "../utils";
 
 export type TokenDefinition = { type: any, regex: RegExp, ignore: boolean };
 export type Token = { type: any, match: RegExpMatchArray, start: number, end: number, line: number, column: number };
@@ -130,7 +131,7 @@ export default class Tokenizer {
 				if (tkGet === null) {
 					tkGet = (/^./).exec(str);
 				}
-				const [line, column] = this.getCursorInfo(this.cursor);
+				const [line, column] = lineColumnFromString(this.source, this.cursor);
 				tk = {
 					type: "INVALID",
 					match: tkGet,
@@ -152,30 +153,11 @@ export default class Tokenizer {
 			}
 		}
 
-		const [line, column] = this.getCursorInfo(tk.start);
+		const [line, column] = lineColumnFromString(this.source, tk.start);
 		tk.line = line;
 		tk.column = column;
 
 		return tk;
-	}
-
-	/**
-	 * Gets additional cursor information at position
-	 * @param {number} pos - The cursor position
-	 * @returns {[number, number]} Line and column of the cursor
-	 */
-	public getCursorInfo(pos: number): [number, number] {
-		let [cursorLine, cursorColumn] = [0, -1];
-		for (let i = 0; i <= pos; i++) {
-			const c = this.source[i];
-			if (c !== "\r") cursorColumn += 1;
-			if (c === "\t") cursorColumn += 3;
-			if (c === "\n") {
-				cursorLine += 1;
-				cursorColumn = -1;
-			}
-		}
-		return [cursorLine, cursorColumn];
 	}
 
 	/**

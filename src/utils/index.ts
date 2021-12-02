@@ -2,7 +2,7 @@ const BRANCH_STR = [
 	"└──",
 
 	"├──",
-	
+
 	"│",
 ];
 
@@ -26,19 +26,19 @@ export type TreefyOptions = {
 
 export function treefy(tree: Object, options: TreefyOptions = {}): string {
 	const {
-		colors 		 =	true,
-		indentSize	 = 	2,
-		titleColor 	 = 	[fromHex("#00ff7f"), fromHex(null)],
-		keyColor 	 = 	[fromHex("#33daff"), fromHex(null)],
-		arrowsColor  = 	[fromHex("#ffffff"), fromHex(null)],
-		numberColor  = 	[fromHex("#ff9605"), fromHex(null)],
-		bigIntColor  = 	[fromHex("#c299ff"), fromHex(null)],
-		stringColor  = 	[fromHex("#FFCA68"), fromHex(null)],
-		booleanColor = 	[fromHex("#ff516d"), fromHex(null)]
+		colors = true,
+		indentSize = 2,
+		titleColor = [fromHex("#00ff7f"), fromHex(null)],
+		keyColor = [fromHex("#33daff"), fromHex(null)],
+		arrowsColor = [fromHex("#ffffff"), fromHex(null)],
+		numberColor = [fromHex("#ff9605"), fromHex(null)],
+		bigIntColor = [fromHex("#c299ff"), fromHex(null)],
+		stringColor = [fromHex("#FFCA68"), fromHex(null)],
+		booleanColor = [fromHex("#ff516d"), fromHex(null)]
 	} = options;
 
 	const applyColor = (str: string, c: [Color, Color]) => colors ? colorfy(str, c[0], c[1]) : str;
-	
+
 	const arrows = [
 		applyColor("├", arrowsColor),
 		applyColor("└", arrowsColor),
@@ -124,11 +124,11 @@ export function treefy(tree: Object, options: TreefyOptions = {}): string {
 				} else {
 					let ss = indent(lvl + 1) + arrow(1);
 					ss += treefyRec(v, lvl + 2);
-					
+
 					if (i < numKeys - 1) {
 						ss = connect(ss, lvl);
 					}
-	
+
 					str += ss;
 				}
 			} else {
@@ -142,7 +142,7 @@ export function treefy(tree: Object, options: TreefyOptions = {}): string {
 				} else if (typeof v === 'string') {
 					vs = applyColor(`"${v}"`, stringColor);
 				} else if (typeof v === 'boolean') {
-					vs = applyColor(v ? "true": "false", booleanColor);
+					vs = applyColor(v ? "true" : "false", booleanColor);
 				}
 
 				str += `${ks}: ${vs}\n`;
@@ -207,7 +207,7 @@ export function fromHex(hex: string): Color {
 	const m = (/#?([0-9a-fA-F]{1,2})([0-9a-fA-F]{1,2})([0-9a-fA-F]{1,2})/).exec(hex);
 	if (m) {
 		let [_, r, g, b] = m;
-	
+
 		return [
 			parseInt(r, 16),
 			parseInt(g, 16),
@@ -220,18 +220,18 @@ export function fromHex(hex: string): Color {
 
 export function unescapeString(str: string): string {
 	// Replace basic escape characters
-	str = str	
-	.replace(/\\'/g, 	"\'")
-	.replace(/\\"/g, 	"\"")
-	.replace(/\\\\/g, 	"\\")
-	.replace(/\\n/g, 	"\n")
-	.replace(/\\r/g, 	"\r")
-	.replace(/\\b/g, 	"\b")
-	.replace(/\\f/g, 	"\f")
-	.replace(/\\v/g, 	"\v")
-	.replace(/\\e/g, 	"\x1b")
-	.replace(/\\0/g, 	"\0")
-	;
+	str = str
+		.replace(/\\'/g, "\'")
+		.replace(/\\"/g, "\"")
+		.replace(/\\\\/g, "\\")
+		.replace(/\\n/g, "\n")
+		.replace(/\\r/g, "\r")
+		.replace(/\\b/g, "\b")
+		.replace(/\\f/g, "\f")
+		.replace(/\\v/g, "\v")
+		.replace(/\\e/g, "\x1b")
+		.replace(/\\0/g, "\0")
+		;
 
 	// Hexadecimal characters
 	str = str.replace(/\\x([0-9a-fA-F][0-9a-fA-F])/g, (match, d: string) => {
@@ -253,3 +253,16 @@ export function getType(v: any): string {
 	}
 }
 
+export function lineColumnFromString(str: string, cursor: number): [number, number] {
+	let [cursorLine, cursorColumn] = [0, -1];
+	for (let i = 0; i <= cursor; i++) {
+		const c = str[i];
+		if (c !== "\r") cursorColumn += 1;
+		if (c === "\t") cursorColumn += 3;
+		if (c === "\n") {
+			cursorLine += 1;
+			cursorColumn = -1;
+		}
+	}
+	return [cursorLine, cursorColumn];
+}
