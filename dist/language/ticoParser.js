@@ -147,10 +147,10 @@ export default class TicoParser {
     binaryExpressionRecursive(left) {
         const operators = [
             // Binary
-            [TokenEnum.BinaryOpStarStar],
             [TokenEnum.BinaryOpSlash,
                 TokenEnum.BinaryOpStar,
                 TokenEnum.BinaryOpModulus],
+            [TokenEnum.BinaryOpStarStar],
             [TokenEnum.BinaryOpSlashSlash,
                 TokenEnum.BinaryOpModulusModulus],
             [TokenEnum.BinaryOpPlus,
@@ -190,15 +190,18 @@ export default class TicoParser {
                 line: l.line,
                 column: l.column
             };
-            for (let i = operators.length - 1; i > id; i--) {
-                node = operator(node, i);
-            }
             node = operator(node, id);
             return node;
         };
         let expr = left;
-        for (let i = 0; i < operators.length; i++) {
-            expr = operator(expr, i);
+        let prev = left;
+        while (true) {
+            for (let i = 0; i < operators.length; i++) {
+                expr = operator(expr, i);
+            }
+            if (expr === prev)
+                break;
+            prev = expr;
         }
         if (expr === left)
             return null;

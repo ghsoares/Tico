@@ -24,55 +24,66 @@ export var NodeType;
     NodeType[NodeType["FunctionCall"] = 14] = "FunctionCall";
     NodeType[NodeType["Max"] = 15] = "Max";
 })(NodeType || (NodeType = {}));
+function wait(ms = 0) {
+    return new Promise(resolve => {
+        setTimeout(resolve, ms);
+    });
+}
 export default class TicoProgram {
     constructor(main) {
         this.mainBranch = main;
+        this.execBatchMS = 15;
+        this.waitMS = 0;
     }
-    evaluateExpression(branch, node) {
+    async evaluateExpression(branch, node) {
+        if (Date.now() - this.execBatchStart > this.execBatchMS) {
+            await wait(this.waitMS);
+            this.execBatchStart = Date.now();
+        }
         switch (node.type) {
             case NodeType.Literal: {
                 return node.value;
             }
             case NodeType.BinaryExpression: {
-                return this.evaluateBinaryExpression(branch, node);
+                return await this.evaluateBinaryExpression(branch, node);
             }
             case NodeType.NegateExpression: {
-                return this.evaluateNegateExpression(branch, node);
+                return await this.evaluateNegateExpression(branch, node);
             }
             case NodeType.IfExpression: {
-                return this.evaluateIfExpression(branch, node);
+                return await this.evaluateIfExpression(branch, node);
             }
             case NodeType.WhileLoopExpression: {
-                return this.evaluateWhileLoopExpression(branch, node);
+                return await this.evaluateWhileLoopExpression(branch, node);
             }
             case NodeType.ForLoopExpression: {
-                return this.evaluateForLoopExpression(branch, node);
+                return await this.evaluateForLoopExpression(branch, node);
             }
             case NodeType.Set: {
-                return this.evaluateSet(branch, node);
+                return await this.evaluateSet(branch, node);
             }
             case NodeType.Identifier: {
-                return this.evaluateIdentifier(branch, node).get();
+                return (await this.evaluateIdentifier(branch, node)).get();
             }
             case NodeType.FunctionExpression: {
-                return this.evaluateFunctionCreate(branch, node);
+                return await this.evaluateFunctionCreate(branch, node);
             }
             case NodeType.ReturnStatement: {
-                return this.evaluateReturnStatement(branch, node);
+                return await this.evaluateReturnStatement(branch, node);
             }
             case NodeType.BreakStatement: {
-                return this.evaluateBreakStatement(branch, node);
+                return await this.evaluateBreakStatement(branch, node);
             }
             case NodeType.FunctionCall: {
-                return this.evaluateFunctionCall(branch, node);
+                return await this.evaluateFunctionCall(branch, node);
             }
             default: throw throwAtPos(node.line, node.column, `Not implemented`);
         }
     }
-    evaluateBinaryExpression(branch, node) {
+    async evaluateBinaryExpression(branch, node) {
         const { left, operator, right } = node;
-        let leftValue = this.evaluateExpression(branch, left);
-        let rightValue = this.evaluateExpression(branch, right);
+        let leftValue = await this.evaluateExpression(branch, left);
+        let rightValue = await this.evaluateExpression(branch, right);
         const overload = (type) => {
             let o = null;
             if (leftValue !== null && leftValue !== undefined) {
@@ -191,16 +202,16 @@ export default class TicoProgram {
             default: throw throwAtPos(operator.line, operator.column, `Not implemented`);
         }
     }
-    evaluateNegateExpression(branch, node) {
-        return !this.evaluateExpression(branch, node.expr);
+    async evaluateNegateExpression(branch, node) {
+        return !(await this.evaluateExpression(branch, node.expr));
     }
-    evaluateIfExpression(branch, node) {
-        const isTrue = this.evaluateExpression(branch, node.condition);
+    async evaluateIfExpression(branch, node) {
+        const isTrue = await this.evaluateExpression(branch, node.condition);
         if (isTrue) {
             node.parent = branch;
             node.functions = {};
             node.variables = {};
-            return this.runBranch(node);
+            return await this.runBranch(node);
         }
         else if (node.next) {
             if (node.next.type === NodeType.ElseExpression) {
@@ -208,50 +219,50 @@ export default class TicoProgram {
                 elseNode.parent = branch;
                 elseNode.functions = {};
                 elseNode.variables = {};
-                return this.runBranch(elseNode);
+                return await this.runBranch(elseNode);
             }
             else if (node.next.type === NodeType.IfExpression) {
-                return this.evaluateExpression(branch, node.next);
+                return await this.evaluateExpression(branch, node.next);
             }
         }
     }
-    evaluateWhileLoopExpression(branch, node) {
+    async evaluateWhileLoopExpression(branch, node) {
         let currVal = undefined;
-        let isTrue = this.evaluateExpression(branch, node.condition);
+        let isTrue = await this.evaluateExpression(branch, node.condition);
         while (isTrue) {
             node.parent = branch;
             node.variables = {};
             node.functions = {};
-            currVal = this.runBranch(node);
-            isTrue = this.evaluateExpression(branch, node.condition);
+            currVal = await this.runBranch(node);
+            isTrue = await this.evaluateExpression(branch, node.condition);
             if (node.stopped)
                 break;
         }
         return currVal;
     }
-    evaluateForLoopExpression(branch, node) {
+    async evaluateForLoopExpression(branch, node) {
         let currVal = undefined;
-        this.evaluateExpression(branch, node.init);
-        let isTrue = this.evaluateExpression(branch, node.condition);
+        await this.evaluateExpression(branch, node.init);
+        let isTrue = await this.evaluateExpression(branch, node.condition);
         while (isTrue) {
             node.parent = branch;
             node.variables = {};
             node.functions = {};
-            currVal = this.runBranch(node);
-            this.evaluateExpression(branch, node.iterate);
-            isTrue = this.evaluateExpression(branch, node.condition);
+            currVal = await this.runBranch(node);
+            await this.evaluateExpression(branch, node.iterate);
+            isTrue = await this.evaluateExpression(branch, node.condition);
             if (node.stopped)
                 break;
         }
         return currVal;
     }
-    evaluateSet(branch, node) {
-        const val = this.evaluateExpression(branch, node.value);
-        const setget = this.evaluateIdentifier(branch, node.id);
+    async evaluateSet(branch, node) {
+        const val = await this.evaluateExpression(branch, node.value);
+        const setget = await this.evaluateIdentifier(branch, node.id);
         setget.set(val);
         return val;
     }
-    evaluateIdentifier(branch, node) {
+    async evaluateIdentifier(branch, node) {
         let found = false;
         let obj = branch.variables;
         let key = '';
@@ -287,10 +298,11 @@ export default class TicoProgram {
             }
         };
     }
-    evaluateFunctionCreate(branch, node) {
-        this.evaluateFunction(branch, node.id).create(node);
+    async evaluateFunctionCreate(branch, node) {
+        const f = await this.evaluateFunction(branch, node.id);
+        await f.create(node);
     }
-    evaluateReturnStatement(branch, node) {
+    async evaluateReturnStatement(branch, node) {
         let b = branch;
         while (true) {
             b.stopped = true;
@@ -303,9 +315,9 @@ export default class TicoProgram {
         }
         if (node.expression === null)
             return null;
-        return this.evaluateExpression(branch, node.expression);
+        return await this.evaluateExpression(branch, node.expression);
     }
-    evaluateBreakStatement(branch, node) {
+    async evaluateBreakStatement(branch, node) {
         let b = branch;
         while (true) {
             b.stopped = true;
@@ -318,11 +330,15 @@ export default class TicoProgram {
         }
         return undefined;
     }
-    evaluateFunctionCall(branch, node) {
-        const f = this.evaluateFunction(branch, node.id);
-        return f.call(node.args.map(v => this.evaluateExpression(branch, v)));
+    async evaluateFunctionCall(branch, node) {
+        const f = await this.evaluateFunction(branch, node.id);
+        const mappedArgs = [];
+        for (const arg of node.args) {
+            mappedArgs.push(await this.evaluateExpression(branch, arg));
+        }
+        return await f.call(await Promise.all(mappedArgs));
     }
-    evaluateFunction(branch, node) {
+    async evaluateFunction(branch, node) {
         let found = false;
         let obj = branch.functions;
         let key = '';
@@ -349,21 +365,21 @@ export default class TicoProgram {
         }
         const self = this;
         return {
-            create(func) {
+            async create(func) {
                 if (found)
                     throw throwAtPos(node.line, node.column, `Identifier "${key}" already exists`);
-                func.args.forEach(arg => {
+                for (const arg of func.args) {
                     if (arg.staticDefaultValue) {
-                        arg.defaultValueEvaluated = self.evaluateExpression(branch, arg.defaultValueExpression);
+                        arg.defaultValueEvaluated = await self.evaluateExpression(branch, arg.defaultValueExpression);
                     }
                     else {
                         arg.defaultValueEvaluated = null;
                     }
-                });
+                }
                 func.parent = branch;
                 obj[key] = func;
             },
-            call(args) {
+            async call(args) {
                 if (!found)
                     throw throwAtPos(node.line, node.column, `Couldn't find identifer "${key}"`);
                 const f = obj[key];
@@ -383,22 +399,22 @@ export default class TicoProgram {
                                 f.variables[id] = arg.defaultValueEvaluated;
                             }
                             else {
-                                f.variables[id] = self.evaluateExpression(branch, arg.defaultValueExpression);
+                                f.variables[id] = await self.evaluateExpression(branch, arg.defaultValueExpression);
                             }
                         }
                         else {
                             f.variables[id] = args[i];
                         }
                     }
-                    return self.runBranch(f);
+                    return await self.runBranch(f);
                 }
             }
         };
     }
-    runBranch(branch) {
+    async runBranch(branch) {
         let retValue = undefined;
         for (const node of branch.children) {
-            const v = this.evaluateExpression(branch, node);
+            const v = await this.evaluateExpression(branch, node);
             if (v !== undefined)
                 retValue = v;
             if (branch.stopped)
@@ -406,7 +422,13 @@ export default class TicoProgram {
         }
         return retValue;
     }
-    run(variables = {}, functions = {}) {
+    setExecBatchDuration(ms) {
+        this.execBatchMS = ms;
+    }
+    setWaitDuration(ms) {
+        this.waitMS = ms;
+    }
+    async run(variables = {}, functions = {}) {
         this.variables = {
             ...variables
         };
@@ -440,7 +462,8 @@ export default class TicoProgram {
         this.mainBranch.variables = {};
         this.mainBranch.functions = {};
         this.mainBranch.stopped = false;
-        return this.runBranch(this.mainBranch);
+        this.execBatchStart = Date.now();
+        return await this.runBranch(this.mainBranch);
     }
     static fromSourceCode(source) {
         const parser = new TicoParser();

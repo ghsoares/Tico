@@ -44,52 +44,102 @@ export declare type BranchNode = {
     };
     stopped?: boolean;
 } & Node;
+/**
+ * Binary expression node type, allowing recursive expression calculation
+ */
 export declare type BinaryExpressionNode = {
     left: Node;
     operator: Token;
     right: Node;
 } & Node;
+/**
+ * Negate expression node type, negates the value from the expression
+ */
 export declare type NegateExpressionNode = {
     expr: Node;
 } & Node;
+/**
+ * If expression node type, evaluates the condition and
+ * run the branch or next branch if any
+ */
 export declare type IfExpressionNode = {
     condition: Node;
     next?: Node;
 } & BranchNode;
+/**
+ * Else expression node type, this branch is run if the previous
+ * if/elif node condition were false
+ */
 export declare type ElseExpressionNode = {} & BranchNode;
+/**
+ * While loop expression node type, keeps running this branch while
+ * the condition is true
+ */
 export declare type WhileLoopExpressionNode = {
     condition: Node;
 } & BranchNode;
+/**
+ * For loop expression node type, run the init node expression,
+ * keeps running while the condition is true and run the iterate node expression
+ */
 export declare type ForLoopExpressionNode = {
     init: Node;
     condition: Node;
     iterate: Node;
 } & BranchNode;
+/**
+ * Literal node type, stores the raw and the value of the literal
+ */
 export declare type LiteralNode = {
     value: any;
     raw: Token;
 } & Node;
+/**
+ * Identifier node type, stores the id literal of a variable,
+ * searches for the id in the current scope or any of it's parent scopes.
+ */
 export declare type IdentifierNode = {
     id: Token;
 } & Node;
+/**
+ * Set node type, sets the identifier to the value expression
+ */
 export declare type SetNode = {
     id: IdentifierNode;
     value: Node;
 } & Node;
+/**
+ * Function arg node, contains an individual argument of a function,
+ * can contain a static or non-static default value expression
+ */
 export declare type FunctionArgNode = {
     id: IdentifierNode;
     defaultValueExpression: Node;
     defaultValueEvaluated?: any;
     staticDefaultValue: boolean;
 } & Node;
+/**
+ * Function expression node, the main node to declare a function on runtime,
+ * contains the id and the arguments
+ */
 export declare type FunctionExpressionNode = {
     id: IdentifierNode;
     args: FunctionArgNode[];
 } & BranchNode;
+/**
+ * Return statement node, returns the expression from a function or exits the main
+ * program early.
+ */
 export declare type ReturnStatementNode = {
     expression: Node;
 } & Node;
+/**
+ * Break statement node, breaks a running loop
+ */
 export declare type BreakStatementNode = {} & Node;
+/**
+ * Function call node, calls a function identified by id and provides the argument expressions
+ */
 export declare type FunctionCallNode = {
     id: IdentifierNode;
     args: Node[];
@@ -99,13 +149,22 @@ export declare type SetterGetterValue = {
     get(): any;
 };
 export declare type FunctionValue = {
-    create(branch: BranchNode): void;
-    call(args: Node[]): any;
+    create(branch: BranchNode): Promise<void>;
+    call(args: Node[]): Promise<any>;
+};
+export declare type TicoVariables = {
+    [key: string]: any;
+};
+export declare type TicoFunctions = {
+    [key: string]: (...args: any[]) => any;
 };
 export default class TicoProgram {
     private mainBranch;
     private variables;
     private functions;
+    private execBatchStart;
+    private execBatchMS;
+    private waitMS;
     constructor(main: BranchNode);
     private evaluateExpression;
     private evaluateBinaryExpression;
@@ -121,10 +180,8 @@ export default class TicoProgram {
     private evaluateFunctionCall;
     private evaluateFunction;
     private runBranch;
-    run(variables?: {
-        [key: string]: any;
-    }, functions?: {
-        [key: string]: (...args: any[]) => any;
-    }): any;
+    setExecBatchDuration(ms: number): void;
+    setWaitDuration(ms: number): void;
+    run(variables?: TicoVariables, functions?: TicoFunctions): Promise<any>;
     static fromSourceCode(source: string): TicoProgram;
 }
