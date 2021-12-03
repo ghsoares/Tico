@@ -49,13 +49,19 @@ export default class Tokenizer {
      * @returns {Token} The next token
      */
     getNextToken() {
+        // Let's tokenize from the cursor position
         const str = this.source.slice(this.cursor);
         let tk = null;
+        // Token should be ignored?
         let tkIgnore = false;
+        // Go for each token definition, there should be a better way to do this
         for (const { type, regex, ignore } of this.tokenDefs) {
+            // Matched the regex in the sliced string
             const matched = regex.exec(str);
             if (matched) {
+                // Set the matched object index to the cursor position
                 matched.index = this.cursor;
+                // Construct the token object
                 const newToken = {
                     type,
                     match: matched,
@@ -64,39 +70,48 @@ export default class Tokenizer {
                     line: -1,
                     column: -1,
                 };
+                // Set the current matched token to this token
+                // if current token is null or this token length is bigger
+                // than the current token
                 if (tk === null || newToken.match[0].length > tk.match[0].length) {
                     tk = newToken;
                     tkIgnore = ignore;
                 }
             }
         }
+        // A token was found
         if (tk !== null) {
+            // Walk the cursor
             this.cursor += tk.match[0].length;
+            // This token should be ignored, so get the next token
             if (tkIgnore && this.skipIgnore) {
                 tk = this.getNextToken();
             }
+            // A token wasn't found
         }
-        if (tk === null) {
+        else {
+            // Found a invalid cahracter, return a invalid token
             if (!this.EOF()) {
+                // Try to get a somewhat relevant token, by matching word
                 let tkGet = (/^\w+/).exec(str);
-                if (tkGet === null) {
-                    tkGet = (/^[-!$%^&*()_+|~=`{}[\]:";'<>?,./]/).exec(str);
-                }
+                // Else return a character
                 if (tkGet === null) {
                     tkGet = (/^./).exec(str);
                 }
-                const [line, column] = lineColumnFromString(this.source, this.cursor);
                 tk = {
                     type: "INVALID",
                     match: tkGet,
                     start: this.cursor,
                     end: this.cursor + tkGet[0].length,
-                    line,
-                    column
+                    line: -1,
+                    column: -1
                 };
+                // Walk the cursor
                 this.cursor += tkGet[0].length;
+                // Reached EOF of the string
             }
             else {
+                // Return a EOF token
                 tk = {
                     type: "EOF",
                     match: null,
@@ -107,6 +122,7 @@ export default class Tokenizer {
                 };
             }
         }
+        // Set the line and column of the token
         const [line, column] = lineColumnFromString(this.source, tk.start);
         tk.line = line;
         tk.column = column;
@@ -117,11 +133,14 @@ export default class Tokenizer {
      * @param {string} str - The source string
      */
     tokenize(str) {
+        // Initializes this tokenizer providing a string
         this.init(str);
+        // Keeps tokenizing until reaches EOF
         while (true) {
             const tk = this.getNextToken();
             this.tokens.push(tk);
             this.numTokens++;
+            // Reached EOF
             if (tk.type === "EOF")
                 break;
         }
@@ -138,10 +157,13 @@ export default class Tokenizer {
      * @returns {Token} The current token or null
      */
     tk(type) {
+        // Out of range, return null
         if (this.tokenCursor >= this.numTokens)
             return null;
+        // If current token type is the same as the provided type, return it
         if (this.tokens[this.tokenCursor].type === type) {
             const tk = this.tokens[this.tokenCursor];
+            // Walk the token cursor
             this.tokenCursor += 1;
             return tk;
         }
@@ -182,5 +204,11 @@ export default class Tokenizer {
      * @returns {Token[]} The array of tokens copy
      */
     getTokens() { return [...this.tokens]; }
+    /**
+     * Returns a substring of the source string providing the start and end positions
+     * @param {number} start Substring start
+     * @param {number} end Substring end
+     * @returns {string} The source substring
+     */
     sourceSubstr(start, end) { return this.source.slice(start, end); }
 }

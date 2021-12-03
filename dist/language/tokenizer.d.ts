@@ -121,5 +121,11 @@ export default class Tokenizer {
      * @returns {Token[]} The array of tokens copy
      */
     getTokens(): Token[];
+    /**
+     * Returns a substring of the source string providing the start and end positions
+     * @param {number} start Substring start
+     * @param {number} end Substring end
+     * @returns {string} The source substring
+     */
     sourceSubstr(start: number, end: number): string;
 }
