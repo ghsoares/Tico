@@ -1,3 +1,4 @@
+import { lineColumnFromString } from "../utils";
 export function throwAtPos(line, column, msg) {
     const e = new SyntaxError(`At line ${line + 1} column ${column + 1}: ${msg}`);
     return e;
@@ -84,7 +85,7 @@ export default class Tokenizer {
                 if (tkGet === null) {
                     tkGet = (/^./).exec(str);
                 }
-                const [line, column] = this.getCursorInfo(this.cursor);
+                const [line, column] = lineColumnFromString(this.source, this.cursor);
                 tk = {
                     type: "INVALID",
                     match: tkGet,
@@ -106,30 +107,10 @@ export default class Tokenizer {
                 };
             }
         }
-        const [line, column] = this.getCursorInfo(tk.start);
+        const [line, column] = lineColumnFromString(this.source, tk.start);
         tk.line = line;
         tk.column = column;
         return tk;
-    }
-    /**
-     * Gets additional cursor information at position
-     * @param {number} pos - The cursor position
-     * @returns {[number, number]} Line and column of the cursor
-     */
-    getCursorInfo(pos) {
-        let [cursorLine, cursorColumn] = [0, -1];
-        for (let i = 0; i <= pos; i++) {
-            const c = this.source[i];
-            if (c !== "\r")
-                cursorColumn += 1;
-            if (c === "\t")
-                cursorColumn += 3;
-            if (c === "\n") {
-                cursorLine += 1;
-                cursorColumn = -1;
-            }
-        }
-        return [cursorLine, cursorColumn];
     }
     /**
      * Main tokenization function, tokenizes the entire source string

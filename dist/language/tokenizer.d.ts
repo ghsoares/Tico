@@ -75,12 +75,6 @@ export default class Tokenizer {
      */
     private getNextToken;
     /**
-     * Gets additional cursor information at position
-     * @param {number} pos - The cursor position
-     * @returns {[number, number]} Line and column of the cursor
-     */
-    getCursorInfo(pos: number): [number, number];
-    /**
      * Main tokenization function, tokenizes the entire source string
      * @param {string} str - The source string
      */
