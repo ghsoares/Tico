@@ -287,7 +287,7 @@ export default class TicoParser {
 		if (!expr)
 			this.tokenizer.tkThrowErr("Expected expression");
 
-		if (!this.tokenizer.tk(TokenEnum.SymbolBracketClose))
+		if (!this.tokenizer.tk(TokenEnum.SymbolParClose))
 			this.tokenizer.tkThrowErr(`Expected ")"`);
 
 		const branch = this.branch() as IfExpressionNode;
