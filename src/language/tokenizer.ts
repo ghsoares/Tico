@@ -1,13 +1,8 @@
-import { lineColumnFromString } from "../utils";
+import { throwErrorAtPos } from "../utils";
 
 type TokenType = string | number;
 export type TokenDefinition = { type: TokenType, regex: RegExp, ignore: boolean };
 export type Token = { type: TokenType, match: RegExpMatchArray, start: number, end: number };
-
-export function throwAtPos(line: number, column: number, msg: string) {
-	const e = new SyntaxError(`At line ${line + 1} column ${column + 1}: ${msg}`);
-	return e;
-}
 
 /**
  * Main tokenizer class, takes multiple token definitions with it's type and regex and tokenizes
@@ -170,8 +165,7 @@ export default class Tokenizer {
 	 * @param {string} msg - The error message
 	 */
 	public throwErr(msg: string) {
-		const [l, c] = lineColumnFromString(this.source, this.cursor);
-		throw new SyntaxError(`At line ${l + 1} column ${c + 1}: ${msg}`);
+		throwErrorAtPos(this.source, this.cursor, msg);
 	}
 
 	public unexpectedTokenErr(msg: string) {

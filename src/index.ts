@@ -1,5 +1,6 @@
 import fs from "fs";
 import TicoProgram from "./runtime/tico";
+import { throwErrorAtPos } from "./utils";
 
 const source = fs.readFileSync("src/test.tico", "utf-8");
 
@@ -14,4 +15,6 @@ const run = async() => {
 	console.log(`Elapsed: ${elapsed} ms`);
 }
 
-run();
+run().catch(e => {
+	console.error(e);
+});

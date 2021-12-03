@@ -1,7 +1,7 @@
 import TicoParser from "../language/ticoParser";
 import { TokenEnum } from "../language/ticoTokenizer";
-import { throwAtPos, Token } from "../language/tokenizer";
-import { foregroundReset, foreground, unescapeString, background, backgroundReset, lineColumnFromString } from "../utils";
+import { Token } from "../language/tokenizer";
+import { foregroundReset, foreground, unescapeString, background, backgroundReset, lineColumnFromString, throwErrorAtPos } from "../utils";
 
 /**
  * Node type enum, contains all the node types used by Tico
@@ -198,8 +198,7 @@ export default class TicoProgram {
 	}
 
 	private throwError(msg: string, node: Node): void {
-		const [l, c] = lineColumnFromString(this.sourceCode, node.start);
-		throw throwAtPos(l, c, msg);
+		throwErrorAtPos(this.sourceCode, node.start, msg);
 	}
 
 	private async evaluateExpression(branch: BranchNode, node: Node): Promise<any> {
@@ -252,7 +251,7 @@ export default class TicoProgram {
 			if (this.onStderr) {
 				return this.onStderr(e);
 			}
-			return null;
+			throw e;
 		}
 	}
 
