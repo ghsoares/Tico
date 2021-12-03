@@ -39,26 +39,26 @@ export enum TokenEnum {
 	// Binary operators
 	BinaryOpMin,
 
+	BinaryOpStarStar,
+	BinaryOpSlashSlash,
+	BinaryOpModulusModulus,
 	BinaryOpPlus,
 	BinaryOpMinus,
 	BinaryOpStar,
-	BinaryOpStarStar,
 	BinaryOpSlash,
-	BinaryOpSlashSlash,
 	BinaryOpModulus,
-	BinaryOpModulusModulus,
 	
 	BinaryOpMax,
 
 	// Conditional Operators
 	ConditionalOpMin,
 
-	ConditionalOpGreater,
-	ConditionalOpLess,
 	ConditionalOpGreaterEqual,
 	ConditionalOpLessEqual,
-	ConditionalOpEqual,
 	ConditionalOpNotEqual,
+	ConditionalOpGreater,
+	ConditionalOpLess,
+	ConditionalOpEqual,
 	ConditionalAnd,
 	ConditionalOr,
 
@@ -94,17 +94,17 @@ export default class TicoTokenizer extends Tokenizer {
 
 		this.addTokenDefinition(
 			TokenEnum.IgnoreMultilineComment,
-			/#\*(\s|\S)*?\*#/,
+			[/#\*(\s|\S)*?\*#/],
 			true
 		);
 		this.addTokenDefinition(
 			TokenEnum.IgnoreComment,
-			/#.*/,
+			[/#.*/],
 			true
 		);
 		this.addTokenDefinition(
 			TokenEnum.IgnoreWhitespace,
-			/[\s\n\r]+/,
+			[/[\s\n\r]+/],
 			true
 		);
 
@@ -122,7 +122,7 @@ export default class TicoTokenizer extends Tokenizer {
 			throw new Error(`New keywords added, update this function`);
 		}
 		for (let i = TokenEnum.KeywordMin + 1; i < TokenEnum.KeywordMax; i++) {
-			let expressions = [];
+			let expressions:RegExp[]  = [];
 
 			switch (i) {
 				case TokenEnum.KeywordFunction: {
@@ -152,9 +152,7 @@ export default class TicoTokenizer extends Tokenizer {
 				default: throw new Error(`Not implemented`);
 			}
 
-			for (const exp of expressions) {
-				this.addTokenDefinition(i, exp);
-			}
+			this.addTokenDefinition(i, expressions);
 		}
 	}
 
@@ -164,19 +162,19 @@ export default class TicoTokenizer extends Tokenizer {
 			throw new Error(`New literals added, update this function`);
 		}
 		for (let i = TokenEnum.LiteralMin + 1; i < TokenEnum.LiteralMax; i++) {
-			let expressions = [];
+			let expressions:RegExp[]  = [];
 
 			switch (i) {
 				case TokenEnum.LiteralNumber: {
 					expressions = [
-						/[+-]?\d+/,
-						/[+-]?\d+\.\d*/
+						/[+-]?\d+\.\d*/,
+						/[+-]?\d+/
 					];
 				} break;
 				case TokenEnum.LiteralBigInt: {
 					expressions = [
-						/([+-]?\d+)n/,
 						/BigInt\((.+)\)/,
+						/([+-]?\d+)n/,
 					];
 				} break;
 				case TokenEnum.LiteralString: {
@@ -198,9 +196,7 @@ export default class TicoTokenizer extends Tokenizer {
 				default: throw new Error(`Not implemented`);
 			}
 
-			for (const exp of expressions) {
-				this.addTokenDefinition(i, exp);
-			}
+			this.addTokenDefinition(i, expressions);
 		}
 	}
 
@@ -210,7 +206,7 @@ export default class TicoTokenizer extends Tokenizer {
 			throw new Error(`New binary operators added, update this function`);
 		}
 		for (let i = TokenEnum.BinaryOpMin + 1; i < TokenEnum.BinaryOpMax; i++) {
-			let expressions = [];
+			let expressions:RegExp[]  = [];
 
 			switch (i) {
 				case TokenEnum.BinaryOpPlus: {
@@ -240,9 +236,7 @@ export default class TicoTokenizer extends Tokenizer {
 				default: throw new Error(`Not implemented`);
 			}
 
-			for (const exp of expressions) {
-				this.addTokenDefinition(i, exp);
-			}
+			this.addTokenDefinition(i, expressions);
 		}
 	}
 
@@ -252,7 +246,7 @@ export default class TicoTokenizer extends Tokenizer {
 			throw new Error(`New binary operators added, update this function`);
 		}
 		for (let i = TokenEnum.ConditionalOpMin + 1; i < TokenEnum.ConditionalOpMax; i++) {
-			let expressions = [];
+			let expressions:RegExp[]  = [];
 
 			switch (i) {
 				case TokenEnum.ConditionalOpGreater: {
@@ -283,9 +277,7 @@ export default class TicoTokenizer extends Tokenizer {
 				default: throw new Error(`Not implemented`);
 			}
 
-			for (const exp of expressions) {
-				this.addTokenDefinition(i, exp);
-			}
+			this.addTokenDefinition(i, expressions)
 		}
 	}
 
@@ -295,7 +287,7 @@ export default class TicoTokenizer extends Tokenizer {
 			throw new Error(`New symbols added, update this function`);
 		}
 		for (let i = TokenEnum.SymbolMin + 1; i < TokenEnum.SymbolMax; i++) {
-			let expressions = [];
+			let expressions:RegExp[]  = [];
 
 			switch (i) {
 				case TokenEnum.SymbolEquals: {
@@ -331,9 +323,7 @@ export default class TicoTokenizer extends Tokenizer {
 				default: throw new Error(`Not implemented`);
 			}
 
-			for (const exp of expressions) {
-				this.addTokenDefinition(i, exp);
-			}
+			this.addTokenDefinition(i, expressions);
 		}
 	}
 
@@ -343,7 +333,7 @@ export default class TicoTokenizer extends Tokenizer {
 			throw new Error(`New extra tokens added, update this function`);
 		}
 		for (let i = TokenEnum.ExtraMin + 1; i < TokenEnum.ExtraMax; i++) {
-			let expressions = [];
+			let expressions:RegExp[]  = [];
 
 			switch (i) {
 				case TokenEnum.ExtraIdentifier: {
@@ -352,9 +342,7 @@ export default class TicoTokenizer extends Tokenizer {
 				default: throw new Error(`Not implemented`);
 			}
 
-			for (const exp of expressions) {
-				this.addTokenDefinition(i, exp);
-			}
+			this.addTokenDefinition(i, expressions);
 		}
 	}
 }

@@ -1,31 +1,13 @@
 import TicoParser from "./language/ticoParser";
-import TicoProgram from "./runtime/tico";
-
 import fs from "fs";
-import { treefy } from "./utils";
 
-const source = fs.readFileSync("src/test.tico", 'utf-8');
-const program = TicoProgram.fromSourceCode(source);
+const source = fs.readFileSync("src/test.tico", "utf-8");
 
-program.setStdout(what => {
-	return process.stdout.write("" + what + "\n");
-});
+const start = Date.now();
 
-program.setStderr(what => {
-	return process.stderr.write("" + what + "\n");
-});
+const parser = new TicoParser();
+parser.parse(source);
 
-const run = async() => {
-	process.stdout.write(await program.run() + "\n");
-}
+const elapsed = Date.now() - start;
 
-//run();
-
-const str = treefy({
-	title: "A object",
-	propA: 10,
-	probB: [ "apple", "grape"],
-	probC: null,
-	probD: undefined
-});
-console.log(str);
+console.log(`Elapsed: ${elapsed} ms`);
