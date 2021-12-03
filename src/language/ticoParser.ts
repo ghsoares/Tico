@@ -17,7 +17,7 @@ import {
 	BreakStatementNode,
 	ForLoopExpressionNode,
 } from "../runtime/tico";
-import { treefy, TreefyOptions } from "../utils";
+import { lineColumnFromString, treefy, TreefyOptions } from "../utils";
 import TicoTokenizer, { TokenEnum } from "./ticoTokenizer";
 
 export type StringifyOptions = {
@@ -66,9 +66,7 @@ export default class TicoParser {
 				value: val,
 				raw: literal,
 				start: literal.start,
-				end: literal.end,
-				line: literal.line,
-				column: literal.column
+				end: literal.end
 			} as LiteralNode;
 		}
 		return null;
@@ -81,9 +79,7 @@ export default class TicoParser {
 				type: NodeType.Identifier,
 				id: v,
 				start: v.start,
-				end: v.end,
-				line: v.line,
-				column: v.column
+				end: v.end
 			} as IdentifierNode;
 		}
 		return null;
@@ -131,8 +127,8 @@ export default class TicoParser {
 			args,
 			start: id.start,
 			end: close.end,
-			line: id.line,
-			column: id.column
+
+
 		} as FunctionCallNode;
 	}
 
@@ -174,8 +170,8 @@ export default class TicoParser {
 			expr,
 			start: negate.start,
 			end: expr.end,
-			line: negate.line,
-			column: negate.column
+
+
 		} as NegateExpressionNode;
 	}
 
@@ -196,7 +192,7 @@ export default class TicoParser {
 			TokenEnum.BinaryOpModulus],
 
 			[TokenEnum.BinaryOpStarStar],
-			
+
 			[TokenEnum.BinaryOpSlashSlash,
 			TokenEnum.BinaryOpModulusModulus],
 
@@ -238,8 +234,8 @@ export default class TicoParser {
 				right,
 				start: l.start,
 				end: right.end,
-				line: l.line,
-				column: l.column
+
+
 			} as BinaryExpressionNode;
 
 			node = operator(node, id);
@@ -295,8 +291,8 @@ export default class TicoParser {
 		branch.type = NodeType.IfExpression;
 		branch.condition = expr;
 		branch.start = ifKey.start;
-		branch.line = ifKey.line;
-		branch.column = ifKey.column;
+
+
 
 		if (this.tokenizer.tk(TokenEnum.KeywordElse, false)) {
 			branch.next = this.elseExpression();
@@ -317,8 +313,8 @@ export default class TicoParser {
 
 		branch.type = NodeType.ElseExpression;
 		branch.start = elseKey.start;
-		branch.line = elseKey.line;
-		branch.column = elseKey.column;
+
+
 
 		return branch;
 	}
@@ -344,8 +340,8 @@ export default class TicoParser {
 		branch.type = NodeType.IfExpression;
 		branch.condition = expr;
 		branch.start = elifKey.start;
-		branch.line = elifKey.line;
-		branch.column = elifKey.column;
+
+
 
 		if (this.tokenizer.tk(TokenEnum.KeywordElse, false)) {
 			branch.next = this.elseExpression();
@@ -377,8 +373,8 @@ export default class TicoParser {
 		branch.type = NodeType.WhileLoopExpression;
 		branch.condition = expr;
 		branch.start = whileKey.start;
-		branch.line = whileKey.line;
-		branch.column = whileKey.column;
+
+
 
 		return branch;
 	}
@@ -414,8 +410,8 @@ export default class TicoParser {
 		branch.condition = condition;
 		branch.iterate = iterate;
 		branch.start = forKey.start;
-		branch.line = forKey.line;
-		branch.column = forKey.column;
+
+
 
 		return branch;
 	}
@@ -439,8 +435,8 @@ export default class TicoParser {
 			value: expr,
 			start: id.start,
 			end: expr.end,
-			line: id.line,
-			column: id.column
+
+
 		};
 
 		return node;
@@ -475,8 +471,8 @@ export default class TicoParser {
 				staticDefaultValue: staticArg,
 				start: id.start,
 				end: defValue ? defValue.end : id.end,
-				line: id.line,
-				column: id.column
+
+
 			});
 
 			if (!this.tokenizer.tk(TokenEnum.SymbolComma))
@@ -510,8 +506,8 @@ export default class TicoParser {
 		branch.id = id;
 		branch.args = args;
 		branch.start = keyFunc.start;
-		branch.line = keyFunc.line;
-		branch.column = keyFunc.column;
+
+
 
 		return branch;
 	}
@@ -527,8 +523,8 @@ export default class TicoParser {
 			expression: retExpr,
 			start: retKey.start,
 			end: retExpr ? retExpr.end : retKey.end,
-			line: retKey.line,
-			column: retKey.column
+
+
 		} as ReturnStatementNode;
 	}
 
@@ -540,8 +536,8 @@ export default class TicoParser {
 			type: NodeType.BreakStatement,
 			start: breakKey.start,
 			end: breakKey.end,
-			line: breakKey.line,
-			column: breakKey.column
+
+
 		} as BreakStatementNode;
 	}
 
@@ -568,8 +564,8 @@ export default class TicoParser {
 			children: [],
 			start: 0,
 			end: 0,
-			line: 0,
-			column: 0
+
+
 		};
 
 		const singleExpression = this.tokenizer.tk(TokenEnum.SymbolCurlyBracketOpen) === null;
@@ -618,8 +614,8 @@ export default class TicoParser {
 			children: [],
 			start: 0,
 			end: 0,
-			line: 0,
-			column: 0
+
+
 		};
 
 		while (true) {
@@ -657,7 +653,7 @@ export default class TicoParser {
 		return main;
 	}
 
-	public static stringify(node: Node, options: StringifyOptions = {}, treefyOptions: TreefyOptions = {}): string {
+	public static stringify(source: string, node: Node, options: StringifyOptions = {}, treefyOptions: TreefyOptions = {}): string {
 		const { showPosition = true } = options;
 
 		const getTree = (n: Node) => {
@@ -665,7 +661,8 @@ export default class TicoParser {
 
 			const tree = {};
 
-			const position = () => `(L ${n.line}, C ${n.column})`;
+			const [l, c] = lineColumnFromString(source, n.start);
+			const position = () => `(L ${l + 1}, C ${c + 1})`;
 
 			switch (n.type) {
 				case NodeType.Branch: {

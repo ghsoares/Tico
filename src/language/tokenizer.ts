@@ -2,7 +2,7 @@ import { lineColumnFromString } from "../utils";
 
 type TokenType = string | number;
 export type TokenDefinition = { type: TokenType, regex: RegExp, ignore: boolean };
-export type Token = { type: TokenType, match: RegExpMatchArray, start: number, end: number, line: number, column: number };
+export type Token = { type: TokenType, match: RegExpMatchArray, start: number, end: number };
 
 export function throwAtPos(line: number, column: number, msg: string) {
 	const e = new SyntaxError(`At line ${line + 1} column ${column + 1}: ${msg}`);
@@ -145,14 +145,12 @@ export default class Tokenizer {
 		// Found token of this type
 		if (match) {
 			match.index = this.cursor;
-			const [l, c] = lineColumnFromString(this.source, this.cursor);
+			//const [l, c] = lineColumnFromString(this.source, this.cursor);
 			tk = {
 				type,
 				match,
 				start: this.cursor,
 				end: this.cursor + match[0].length,
-				line: l,
-				column: c
 			};
 			if (goForward) this.cursor += match[0].length;
 		}
