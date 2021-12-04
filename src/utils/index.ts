@@ -3,6 +3,10 @@
  */
 export type Color = [number, number, number];
 
+export type GlobalOptions = {
+	tabIndentSize: number;
+};
+
 /**
  * Options for treefy function
  */
@@ -53,6 +57,10 @@ export type TreefyOptions = {
 	 * Colors [foreground, background] used for a undefined value
 	 */
 	undefinedColor?: [Color, Color];
+};
+
+export const globalOptions: GlobalOptions = {
+	tabIndentSize: 4
 };
 
 /**
@@ -416,7 +424,7 @@ export function lineColumnFromString(str: string, pos: number): [number, number]
 	for (let i = 0; i <= pos; i++) {
 		const c = str[i];
 		if (c !== "\r") column += 1;
-		if (c === "\t") column += 3;
+		if (c === "\t") column += globalOptions.tabIndentSize - 1;
 		if (c === "\n") {
 			line += 1;
 			column = -1;
@@ -453,7 +461,7 @@ export function throwErrorAtPos(str: string, pos: number, msg: string) {
 			lineS += "... ";
 			if (idx === lines.length - 1) cursorOffset += 4;
 		}
-		lineS += line.slice(cMin, Math.min(cMax, line.length));
+		lineS += line.slice(cMin, Math.min(cMax, line.length)).replace(/\t/g, " ".repeat(globalOptions.tabIndentSize));
 		if (cMax < line.length) {
 			lineS += " ...";
 		}

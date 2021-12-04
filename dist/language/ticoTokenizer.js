@@ -29,23 +29,23 @@ export var TokenEnum;
     TokenEnum[TokenEnum["LiteralMax"] = 22] = "LiteralMax";
     // Binary operators
     TokenEnum[TokenEnum["BinaryOpMin"] = 23] = "BinaryOpMin";
-    TokenEnum[TokenEnum["BinaryOpPlus"] = 24] = "BinaryOpPlus";
-    TokenEnum[TokenEnum["BinaryOpMinus"] = 25] = "BinaryOpMinus";
-    TokenEnum[TokenEnum["BinaryOpStar"] = 26] = "BinaryOpStar";
-    TokenEnum[TokenEnum["BinaryOpStarStar"] = 27] = "BinaryOpStarStar";
-    TokenEnum[TokenEnum["BinaryOpSlash"] = 28] = "BinaryOpSlash";
-    TokenEnum[TokenEnum["BinaryOpSlashSlash"] = 29] = "BinaryOpSlashSlash";
-    TokenEnum[TokenEnum["BinaryOpModulus"] = 30] = "BinaryOpModulus";
-    TokenEnum[TokenEnum["BinaryOpModulusModulus"] = 31] = "BinaryOpModulusModulus";
+    TokenEnum[TokenEnum["BinaryOpStarStar"] = 24] = "BinaryOpStarStar";
+    TokenEnum[TokenEnum["BinaryOpSlashSlash"] = 25] = "BinaryOpSlashSlash";
+    TokenEnum[TokenEnum["BinaryOpModulusModulus"] = 26] = "BinaryOpModulusModulus";
+    TokenEnum[TokenEnum["BinaryOpPlus"] = 27] = "BinaryOpPlus";
+    TokenEnum[TokenEnum["BinaryOpMinus"] = 28] = "BinaryOpMinus";
+    TokenEnum[TokenEnum["BinaryOpStar"] = 29] = "BinaryOpStar";
+    TokenEnum[TokenEnum["BinaryOpSlash"] = 30] = "BinaryOpSlash";
+    TokenEnum[TokenEnum["BinaryOpModulus"] = 31] = "BinaryOpModulus";
     TokenEnum[TokenEnum["BinaryOpMax"] = 32] = "BinaryOpMax";
     // Conditional Operators
     TokenEnum[TokenEnum["ConditionalOpMin"] = 33] = "ConditionalOpMin";
-    TokenEnum[TokenEnum["ConditionalOpGreater"] = 34] = "ConditionalOpGreater";
-    TokenEnum[TokenEnum["ConditionalOpLess"] = 35] = "ConditionalOpLess";
-    TokenEnum[TokenEnum["ConditionalOpGreaterEqual"] = 36] = "ConditionalOpGreaterEqual";
-    TokenEnum[TokenEnum["ConditionalOpLessEqual"] = 37] = "ConditionalOpLessEqual";
-    TokenEnum[TokenEnum["ConditionalOpEqual"] = 38] = "ConditionalOpEqual";
-    TokenEnum[TokenEnum["ConditionalOpNotEqual"] = 39] = "ConditionalOpNotEqual";
+    TokenEnum[TokenEnum["ConditionalOpGreaterEqual"] = 34] = "ConditionalOpGreaterEqual";
+    TokenEnum[TokenEnum["ConditionalOpLessEqual"] = 35] = "ConditionalOpLessEqual";
+    TokenEnum[TokenEnum["ConditionalOpNotEqual"] = 36] = "ConditionalOpNotEqual";
+    TokenEnum[TokenEnum["ConditionalOpGreater"] = 37] = "ConditionalOpGreater";
+    TokenEnum[TokenEnum["ConditionalOpLess"] = 38] = "ConditionalOpLess";
+    TokenEnum[TokenEnum["ConditionalOpEqual"] = 39] = "ConditionalOpEqual";
     TokenEnum[TokenEnum["ConditionalAnd"] = 40] = "ConditionalAnd";
     TokenEnum[TokenEnum["ConditionalOr"] = 41] = "ConditionalOr";
     TokenEnum[TokenEnum["ConditionalOpMax"] = 42] = "ConditionalOpMax";
@@ -70,9 +70,9 @@ export var TokenEnum;
 export default class TicoTokenizer extends Tokenizer {
     constructor() {
         super();
-        this.addTokenDefinition(TokenEnum.IgnoreMultilineComment, /#\*(\s|\S)*?\*#/, true);
-        this.addTokenDefinition(TokenEnum.IgnoreComment, /#.*/, true);
-        this.addTokenDefinition(TokenEnum.IgnoreWhitespace, /[\s\n\r]+/, true);
+        this.addTokenDefinition(TokenEnum.IgnoreMultilineComment, [/#\*(\s|\S)*?\*#/], true);
+        this.addTokenDefinition(TokenEnum.IgnoreComment, [/#.*/], true);
+        this.addTokenDefinition(TokenEnum.IgnoreWhitespace, [/[\s\n\r]+/], true);
         this.addKeywords();
         this.addLiterals();
         this.addBinaryOps();
@@ -130,9 +130,7 @@ export default class TicoTokenizer extends Tokenizer {
                     break;
                 default: throw new Error(`Not implemented`);
             }
-            for (const exp of expressions) {
-                this.addTokenDefinition(i, exp);
-            }
+            this.addTokenDefinition(i, expressions);
         }
     }
     addLiterals() {
@@ -146,22 +144,23 @@ export default class TicoTokenizer extends Tokenizer {
                 case TokenEnum.LiteralNumber:
                     {
                         expressions = [
-                            /[+-]?\d+/,
-                            /[+-]?\d+\.\d*/
+                            /[+-]?\d+\.\d*/,
+                            /[+-]?\d+/
                         ];
                     }
                     break;
                 case TokenEnum.LiteralBigInt:
                     {
                         expressions = [
-                            /([+-]?\d+)n/,
                             /BigInt\((.+)\)/,
+                            /([+-]?\d+)n/,
                         ];
                     }
                     break;
                 case TokenEnum.LiteralString:
                     {
                         expressions = [
+                            /"""[\s\S]*?"""/,
                             /"(.*?)"/,
                             /'(.*?)'/,
                             /`(.*?)`/
@@ -185,9 +184,7 @@ export default class TicoTokenizer extends Tokenizer {
                     break;
                 default: throw new Error(`Not implemented`);
             }
-            for (const exp of expressions) {
-                this.addTokenDefinition(i, exp);
-            }
+            this.addTokenDefinition(i, expressions);
         }
     }
     addBinaryOps() {
@@ -240,9 +237,7 @@ export default class TicoTokenizer extends Tokenizer {
                     break;
                 default: throw new Error(`Not implemented`);
             }
-            for (const exp of expressions) {
-                this.addTokenDefinition(i, exp);
-            }
+            this.addTokenDefinition(i, expressions);
         }
     }
     addConditionalOps() {
@@ -295,9 +290,7 @@ export default class TicoTokenizer extends Tokenizer {
                     break;
                 default: throw new Error(`Not implemented`);
             }
-            for (const exp of expressions) {
-                this.addTokenDefinition(i, exp);
-            }
+            this.addTokenDefinition(i, expressions);
         }
     }
     addSymbols() {
@@ -360,9 +353,7 @@ export default class TicoTokenizer extends Tokenizer {
                     break;
                 default: throw new Error(`Not implemented`);
             }
-            for (const exp of expressions) {
-                this.addTokenDefinition(i, exp);
-            }
+            this.addTokenDefinition(i, expressions);
         }
     }
     addExtra() {
@@ -380,9 +371,7 @@ export default class TicoTokenizer extends Tokenizer {
                     break;
                 default: throw new Error(`Not implemented`);
             }
-            for (const exp of expressions) {
-                this.addTokenDefinition(i, exp);
-            }
+            this.addTokenDefinition(i, expressions);
         }
     }
 }

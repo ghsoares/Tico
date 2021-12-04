@@ -179,6 +179,7 @@ export default class TicoTokenizer extends Tokenizer {
 				} break;
 				case TokenEnum.LiteralString: {
 					expressions = [
+						/"""[\s\S]*?"""/,
 						/"(.*?)"/,
 						/'(.*?)'/,
 						/`(.*?)`/

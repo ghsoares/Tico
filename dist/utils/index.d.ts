@@ -1,7 +1,10 @@
 /**
  * Color type, consists of rgb channels from 0-255
  */
-declare type Color = [number, number, number];
+export declare type Color = [number, number, number];
+export declare type GlobalOptions = {
+    tabIndentSize: number;
+};
 /**
  * Options for treefy function
  */
@@ -51,6 +54,7 @@ export declare type TreefyOptions = {
      */
     undefinedColor?: [Color, Color];
 };
+export declare const globalOptions: GlobalOptions;
 /**
  * Treefy function, turns recursively a object into a prettified tree
  * @example
@@ -117,10 +121,16 @@ export declare function fromHex(hex: string): Color;
  */
 export declare function unescapeString(str: string): string;
 /**
- * Returns the line and column position of a cursor in a string
+ * Returns the line and column position at character position in a string
  * @param {string} str The string to be used
- * @param {number} cursor The cursor position in the range of the string length
+ * @param {number} pos The position in the range of the string length
  * @returns {[number, number]} Line and column of the cursor
  */
-export declare function lineColumnFromString(str: string, cursor: number): [number, number];
-export {};
+export declare function lineColumnFromString(str: string, pos: number): [number, number];
+/**
+ * Throws an error at string position, with a preview of where is the error
+ * @param {string} str The string to throw error
+ * @param {string} pos The position of the error
+ * @param {string} msg The error message
+ */
+export declare function throwErrorAtPos(str: string, pos: number, msg: string): void;
