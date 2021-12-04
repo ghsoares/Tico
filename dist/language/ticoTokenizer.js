@@ -20,8 +20,8 @@ export var TokenEnum;
     TokenEnum[TokenEnum["KeywordMax"] = 14] = "KeywordMax";
     // Literals
     TokenEnum[TokenEnum["LiteralMin"] = 15] = "LiteralMin";
-    TokenEnum[TokenEnum["LiteralNumber"] = 16] = "LiteralNumber";
-    TokenEnum[TokenEnum["LiteralBigInt"] = 17] = "LiteralBigInt";
+    TokenEnum[TokenEnum["LiteralBigInt"] = 16] = "LiteralBigInt";
+    TokenEnum[TokenEnum["LiteralNumber"] = 17] = "LiteralNumber";
     TokenEnum[TokenEnum["LiteralString"] = 18] = "LiteralString";
     TokenEnum[TokenEnum["LiteralBoolean"] = 19] = "LiteralBoolean";
     TokenEnum[TokenEnum["LiteralNull"] = 20] = "LiteralNull";
@@ -152,7 +152,7 @@ export default class TicoTokenizer extends Tokenizer {
                 case TokenEnum.LiteralBigInt:
                     {
                         expressions = [
-                            /BigInt\((.+)\)/,
+                            /BigInt\((.+?)\)/,
                             /([+-]?\d+)n/,
                         ];
                     }

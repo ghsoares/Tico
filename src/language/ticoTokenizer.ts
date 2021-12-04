@@ -27,8 +27,8 @@ export enum TokenEnum {
 	// Literals
 	LiteralMin,
 
-	LiteralNumber,
 	LiteralBigInt,
+	LiteralNumber,
 	LiteralString,
 	LiteralBoolean,
 	LiteralNull,
@@ -173,7 +173,7 @@ export default class TicoTokenizer extends Tokenizer {
 				} break;
 				case TokenEnum.LiteralBigInt: {
 					expressions = [
-						/BigInt\((.+)\)/,
+						/BigInt\((.+?)\)/,
 						/([+-]?\d+)n/,
 					];
 				} break;
