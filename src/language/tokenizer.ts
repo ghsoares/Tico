@@ -179,7 +179,7 @@ export default class Tokenizer {
 			const [def, groups] = this.getMatchInfo(match);
 
 			// This token should be ignored
-			if (def.ignore && !this.skipIgnore) {
+			if (def.ignore && this.skipIgnore) {
 				// Walk forward the cursor
 				this.cursor += match[0].length;
 

@@ -110,7 +110,7 @@ export default class Tokenizer {
             // Grab info about matched string
             const [def, groups] = this.getMatchInfo(match);
             // This token should be ignored
-            if (def.ignore && !this.skipIgnore) {
+            if (def.ignore && this.skipIgnore) {
                 // Walk forward the cursor
                 this.cursor += match[0].length;
                 // Get the next token instead
