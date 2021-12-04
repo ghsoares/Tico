@@ -17,7 +17,10 @@ export default class Tokenizer {
 	 * Invalid type token
 	 */
 	public static INVALID: number = -2;
-
+	/**
+	 * Skips the ignore tokens? Turn off if want to parse those tokens
+	 */
+	public skipIgnore: boolean;
 	/**
 	 * Object containing all token definitions
 	 */
@@ -56,6 +59,7 @@ export default class Tokenizer {
 		this.source = "";
 		this.sourceLength = 0;
 		this.cursor = 0;
+		this.skipIgnore = true;
 	}
 
 	/**
@@ -175,10 +179,11 @@ export default class Tokenizer {
 			const [def, groups] = this.getMatchInfo(match);
 
 			// This token should be ignored
-			if (def.ignore) {
+			if (def.ignore && !this.skipIgnore) {
 				// Walk forward the cursor
 				this.cursor += match[0].length;
 
+				// Get the next token instead
 				tk = this.next();
 			// Build the token
 			} else {
