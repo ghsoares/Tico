@@ -1,7 +1,6 @@
 import TicoParser from "../language/ticoParser";
 import { TokenEnum } from "../language/ticoTokenizer";
-import { throwAtPos } from "../language/tokenizer";
-import { foregroundReset, foreground, unescapeString, background, backgroundReset } from "../utils";
+import { foregroundReset, foreground, unescapeString, background, backgroundReset, throwErrorAtPos } from "../utils";
 /**
  * Node type enum, contains all the node types used by Tico
  */
@@ -30,10 +29,14 @@ function wait(ms = 0) {
     });
 }
 export default class TicoProgram {
-    constructor(main) {
-        this.mainBranch = main;
+    constructor(sourceCode) {
+        this.sourceCode = sourceCode;
+        this.mainBranch = new TicoParser().parse(sourceCode);
         this.execBatchMS = 15;
         this.waitMS = 0;
+    }
+    throwError(msg, node) {
+        throwErrorAtPos(this.sourceCode, node.start, msg);
     }
     async evaluateExpression(branch, node) {
         if (Date.now() - this.execBatchStart > this.execBatchMS) {
@@ -78,14 +81,14 @@ export default class TicoProgram {
                 case NodeType.FunctionCall: {
                     return await this.evaluateFunctionCall(branch, node);
                 }
-                default: throw throwAtPos(node.line, node.column, `Not implemented`);
+                default: this.throwError(`Not implemented`, node);
             }
         }
         catch (e) {
             if (this.onStderr) {
                 return this.onStderr(e);
             }
-            return null;
+            throw e;
         }
     }
     async evaluateBinaryExpression(branch, node) {
@@ -207,7 +210,7 @@ export default class TicoProgram {
                     return !orOverload(leftValue, rightValue);
                 return leftValue || rightValue;
             }
-            default: throw throwAtPos(operator.line, operator.column, `Not implemented`);
+            default: this.throwError(`Not implemented`, node);
         }
     }
     async evaluateNegateExpression(branch, node) {
@@ -296,7 +299,6 @@ export default class TicoProgram {
         }
         return {
             get() {
-                //if (!found) throw throwAtPos(node.line, node.column, `Couldn't find identifier "${key}"`);
                 if (!found)
                     return undefined;
                 return obj[key];
@@ -375,7 +377,7 @@ export default class TicoProgram {
         return {
             async create(func) {
                 if (found)
-                    throw throwAtPos(node.line, node.column, `Identifier "${key}" already exists`);
+                    self.throwError(`Identifier "${key}" already exists`, node);
                 for (const arg of func.args) {
                     if (arg.staticDefaultValue) {
                         arg.defaultValueEvaluated = await self.evaluateExpression(branch, arg.defaultValueExpression);
@@ -389,7 +391,7 @@ export default class TicoProgram {
             },
             async call(args) {
                 if (!found)
-                    throw throwAtPos(node.line, node.column, `Couldn't find identifer "${key}"`);
+                    self.throwError(`Couldn't find identifer "${key}"`, node);
                 const f = obj[key];
                 if (typeof f === 'function') {
                     return f.apply(null, args);
@@ -484,9 +486,5 @@ export default class TicoProgram {
         this.mainBranch.stopped = false;
         this.execBatchStart = Date.now();
         return await this.runBranch(this.mainBranch);
-    }
-    static fromSourceCode(source) {
-        const parser = new TicoParser();
-        return new TicoProgram(parser.parse(source));
     }
 }

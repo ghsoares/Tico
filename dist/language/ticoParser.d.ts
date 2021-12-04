@@ -29,5 +29,5 @@ export default class TicoParser {
     private branch;
     private mainBranch;
     parse(source: string): BranchNode;
-    static stringify(node: Node, options?: StringifyOptions, treefyOptions?: TreefyOptions): string;
+    static stringify(source: string, node: Node, options?: StringifyOptions, treefyOptions?: TreefyOptions): string;
 }

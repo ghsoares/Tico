@@ -17,7 +17,7 @@ import {
 	BreakStatementNode,
 	ForLoopExpressionNode,
 } from "../runtime/tico";
-import { treefy, TreefyOptions } from "../utils";
+import { lineColumnFromString, treefy, TreefyOptions } from "../utils";
 import TicoTokenizer, { TokenEnum } from "./ticoTokenizer";
 
 export type StringifyOptions = {
@@ -66,9 +66,7 @@ export default class TicoParser {
 				value: val,
 				raw: literal,
 				start: literal.start,
-				end: literal.end,
-				line: literal.line,
-				column: literal.column
+				end: literal.end
 			} as LiteralNode;
 		}
 		return null;
@@ -81,9 +79,7 @@ export default class TicoParser {
 				type: NodeType.Identifier,
 				id: v,
 				start: v.start,
-				end: v.end,
-				line: v.line,
-				column: v.column
+				end: v.end
 			} as IdentifierNode;
 		}
 		return null;
@@ -96,7 +92,7 @@ export default class TicoParser {
 			const val = this.expression();
 			if (!val) {
 				if (args.length > 0)
-					this.tokenizer.tkThrowErr(`Expected expression`);
+					this.tokenizer.throwErr(`Expected expression`);
 				break;
 			}
 
@@ -110,7 +106,7 @@ export default class TicoParser {
 	}
 
 	private functionCall(): Node {
-		const tkPos = this.tokenizer.tkCursor();
+		const tkPos = this.tokenizer.csr();
 
 		const id = this.identifier() as IdentifierNode;
 		if (!id)
@@ -123,7 +119,7 @@ export default class TicoParser {
 
 		const close = this.tokenizer.tk(TokenEnum.SymbolParClose);
 		if (!close)
-			this.tokenizer.tkThrowErr(`Expected ")"`);
+			this.tokenizer.throwErr(`Expected ")"`);
 
 		return {
 			type: NodeType.FunctionCall,
@@ -131,13 +127,13 @@ export default class TicoParser {
 			args,
 			start: id.start,
 			end: close.end,
-			line: id.line,
-			column: id.column
+
+
 		} as FunctionCallNode;
 	}
 
 	private wrappedExpression(): Node {
-		const tkPos = this.tokenizer.tkCursor();
+		const tkPos = this.tokenizer.csr();
 
 		const parOpen = this.tokenizer.tk(TokenEnum.SymbolParOpen);
 		if (!parOpen)
@@ -147,7 +143,7 @@ export default class TicoParser {
 
 		const parClose = this.tokenizer.tk(TokenEnum.SymbolParClose);
 		if (!parClose)
-			this.tokenizer.tkThrowErr(`Expected ")"`);
+			this.tokenizer.throwErr(`Expected ")"`);
 
 		if (!expr)
 			return null;
@@ -159,7 +155,7 @@ export default class TicoParser {
 	}
 
 	private negateExpression(): Node {
-		const tkPos = this.tokenizer.tkCursor();
+		const tkPos = this.tokenizer.csr();
 
 		const negate = this.tokenizer.tk(TokenEnum.SymbolExclamationMark);
 		if (!negate)
@@ -167,15 +163,15 @@ export default class TicoParser {
 
 		const expr = this.expressionMember();
 		if (!expr)
-			this.tokenizer.tkThrowErr(`Expected expression`);
+			this.tokenizer.throwErr(`Expected expression`);
 
 		return {
 			type: NodeType.NegateExpression,
 			expr,
 			start: negate.start,
 			end: expr.end,
-			line: negate.line,
-			column: negate.column
+
+
 		} as NegateExpressionNode;
 	}
 
@@ -196,7 +192,7 @@ export default class TicoParser {
 			TokenEnum.BinaryOpModulus],
 
 			[TokenEnum.BinaryOpStarStar],
-			
+
 			[TokenEnum.BinaryOpSlashSlash,
 			TokenEnum.BinaryOpModulusModulus],
 
@@ -224,7 +220,7 @@ export default class TicoParser {
 			if (!op) { return l; }
 
 			const next = this.expressionMember();
-			if (!next) this.tokenizer.tkThrowErr(`Expected expression member`);
+			if (!next) this.tokenizer.throwErr(`Expected expression`);
 
 			let right = next;
 			for (let i = id - 1; i >= 0; i--) {
@@ -238,8 +234,8 @@ export default class TicoParser {
 				right,
 				start: l.start,
 				end: right.end,
-				line: l.line,
-				column: l.column
+
+
 			} as BinaryExpressionNode;
 
 			node = operator(node, id);
@@ -263,7 +259,7 @@ export default class TicoParser {
 	}
 
 	private binaryExpression(): Node {
-		const tkPos = this.tokenizer.tkCursor();
+		const tkPos = this.tokenizer.csr();
 
 		const head = this.expressionMember();
 		if (!head) { return this.tokenizer.tkRet(tkPos); }
@@ -275,34 +271,32 @@ export default class TicoParser {
 	}
 
 	private ifExpression(): Node {
-		const tkPos = this.tokenizer.tkCursor();
+		const tkPos = this.tokenizer.csr();
 
 		const ifKey = this.tokenizer.tk(TokenEnum.KeywordIf);
 		if (!ifKey) { return this.tokenizer.tkRet(tkPos); }
 
 		if (!this.tokenizer.tk(TokenEnum.SymbolParOpen))
-			this.tokenizer.tkThrowErr(`Expected "("`);
+			this.tokenizer.throwErr(`Expected "("`);
 
 		const expr = this.expression();
 		if (!expr)
-			this.tokenizer.tkThrowErr("Expected expression");
+			this.tokenizer.throwErr("Expected expression");
 
 		if (!this.tokenizer.tk(TokenEnum.SymbolParClose))
-			this.tokenizer.tkThrowErr(`Expected ")"`);
+			this.tokenizer.throwErr(`Expected ")"`);
 
 		const branch = this.branch() as IfExpressionNode;
 
 		branch.type = NodeType.IfExpression;
 		branch.condition = expr;
 		branch.start = ifKey.start;
-		branch.line = ifKey.line;
-		branch.column = ifKey.column;
 
-		if (this.tokenizer.tk(TokenEnum.KeywordElse)) {
-			this.tokenizer.tkBack();
+
+
+		if (this.tokenizer.tk(TokenEnum.KeywordElse, false)) {
 			branch.next = this.elseExpression();
-		} else if (this.tokenizer.tk(TokenEnum.KeywordElif)) {
-			this.tokenizer.tkBack();
+		} else if (this.tokenizer.tk(TokenEnum.KeywordElif, false)) {
 			branch.next = this.elifExpression();
 		}
 
@@ -310,7 +304,7 @@ export default class TicoParser {
 	}
 
 	private elseExpression() {
-		const tkPos = this.tokenizer.tkCursor();
+		const tkPos = this.tokenizer.csr();
 
 		const elseKey = this.tokenizer.tk(TokenEnum.KeywordElse);
 		if (!elseKey) { return this.tokenizer.tkRet(tkPos); }
@@ -319,40 +313,39 @@ export default class TicoParser {
 
 		branch.type = NodeType.ElseExpression;
 		branch.start = elseKey.start;
-		branch.line = elseKey.line;
-		branch.column = elseKey.column;
+
+
 
 		return branch;
 	}
 
 	private elifExpression() {
-		const tkPos = this.tokenizer.tkCursor();
+		const tkPos = this.tokenizer.csr();
 
 		const elifKey = this.tokenizer.tk(TokenEnum.KeywordElif);
 		if (!elifKey) { return this.tokenizer.tkRet(tkPos); }
 
 		if (!this.tokenizer.tk(TokenEnum.SymbolParOpen))
-			this.tokenizer.tkThrowErr(`Expected "("`);
+			this.tokenizer.throwErr(`Expected "("`);
 
 		const expr = this.expression();
 		if (!expr)
-			this.tokenizer.tkThrowErr("Expected expression");
+			this.tokenizer.throwErr("Expected expression");
 
 		if (!this.tokenizer.tk(TokenEnum.SymbolParClose))
-			this.tokenizer.tkThrowErr(`Expected ")"`);
+			this.tokenizer.throwErr(`Expected ")"`);
 
 		const branch = this.branch() as IfExpressionNode;
 
 		branch.type = NodeType.IfExpression;
 		branch.condition = expr;
 		branch.start = elifKey.start;
-		branch.line = elifKey.line;
-		branch.column = elifKey.column;
 
-		if (this.tokenizer.tk(TokenEnum.KeywordElse)) {
+
+
+		if (this.tokenizer.tk(TokenEnum.KeywordElse, false)) {
 			branch.next = this.elseExpression();
-		} else if (this.tokenizer.tk(TokenEnum.KeywordElif)) {
-			this.tokenizer.tkBack();
+		} else if (this.tokenizer.tk(TokenEnum.KeywordElif, false)) {
 			branch.next = this.elifExpression();
 		}
 
@@ -360,55 +353,55 @@ export default class TicoParser {
 	}
 
 	private whileLoopExpression() {
-		const tkPos = this.tokenizer.tkCursor();
+		const tkPos = this.tokenizer.csr();
 
 		const whileKey = this.tokenizer.tk(TokenEnum.KeywordWhile);
 		if (!whileKey) { return this.tokenizer.tkRet(tkPos); }
 
 		if (!this.tokenizer.tk(TokenEnum.SymbolParOpen))
-			this.tokenizer.tkThrowErr(`Expected "("`);
+			this.tokenizer.throwErr(`Expected "("`);
 
 		const expr = this.expression();
 		if (!expr)
-			this.tokenizer.tkThrowErr("Expected expression");
+			this.tokenizer.throwErr("Expected expression");
 
 		if (!this.tokenizer.tk(TokenEnum.SymbolParClose))
-			this.tokenizer.tkThrowErr(`Expected ")"`);
+			this.tokenizer.throwErr(`Expected ")"`);
 
 		const branch = this.branch() as WhileLoopExpressionNode;
 
 		branch.type = NodeType.WhileLoopExpression;
 		branch.condition = expr;
 		branch.start = whileKey.start;
-		branch.line = whileKey.line;
-		branch.column = whileKey.column;
+
+
 
 		return branch;
 	}
 
 	private forExpression() {
-		const tkPos = this.tokenizer.tkCursor();
+		const tkPos = this.tokenizer.csr();
 
 		const forKey = this.tokenizer.tk(TokenEnum.KeywordFor);
 		if (!forKey) { return this.tokenizer.tkRet(tkPos); }
 
 		if (!this.tokenizer.tk(TokenEnum.SymbolParOpen))
-			this.tokenizer.tkThrowErr(`Expected "("`);
+			this.tokenizer.throwErr(`Expected "("`);
 
 		const init = this.expression();
 		if (!init)
-			this.tokenizer.tkThrowErr(`Expected expression`);
+			this.tokenizer.throwErr(`Expected expression`);
 
 		const condition = this.expression();
 		if (!condition)
-			this.tokenizer.tkThrowErr(`Expected expression`);
+			this.tokenizer.throwErr(`Expected expression`);
 
 		const iterate = this.expression();
 		if (!iterate)
-			this.tokenizer.tkThrowErr(`Expected expression`);
+			this.tokenizer.throwErr(`Expected expression`);
 
 		if (!this.tokenizer.tk(TokenEnum.SymbolParClose))
-			this.tokenizer.tkThrowErr(`Expected "("`);
+			this.tokenizer.throwErr(`Expected ")"`);
 
 		const branch = this.branch() as ForLoopExpressionNode;
 
@@ -417,14 +410,14 @@ export default class TicoParser {
 		branch.condition = condition;
 		branch.iterate = iterate;
 		branch.start = forKey.start;
-		branch.line = forKey.line;
-		branch.column = forKey.column;
+
+
 
 		return branch;
 	}
 
 	private variableSet(): Node {
-		const tkPos = this.tokenizer.tkCursor();
+		const tkPos = this.tokenizer.csr();
 
 		const id = this.identifier() as IdentifierNode;
 		if (!id)
@@ -434,7 +427,7 @@ export default class TicoParser {
 			return this.tokenizer.tkRet(tkPos);
 
 		const expr = this.expression();
-		if (!expr) this.tokenizer.tkThrowErr(`Expected expression`);
+		if (!expr) this.tokenizer.throwErr(`Expected expression`);
 
 		const node: SetNode = {
 			type: NodeType.Set,
@@ -442,8 +435,8 @@ export default class TicoParser {
 			value: expr,
 			start: id.start,
 			end: expr.end,
-			line: id.line,
-			column: id.column
+
+
 		};
 
 		return node;
@@ -458,7 +451,7 @@ export default class TicoParser {
 			const id = this.identifier() as IdentifierNode;
 			if (!id) {
 				if (args.length > 0)
-					this.tokenizer.tkThrowErr(`Expected identifier`);
+					this.tokenizer.throwErr(`Expected identifier`);
 				break;
 			}
 
@@ -467,9 +460,9 @@ export default class TicoParser {
 			if (eq) {
 				defValue = this.expression();
 				if (!defValue)
-					this.tokenizer.tkThrowErr(`Expected expression`);
+					this.tokenizer.throwErr(`Expected expression`);
 			} else if (staticArg)
-				this.tokenizer.tkThrowErr(`Static argument declaration expects a default value expression`);
+				this.tokenizer.throwErr(`Static argument declaration expects a default value expression`);
 
 			args.push({
 				type: NodeType.FunctionArg,
@@ -478,8 +471,8 @@ export default class TicoParser {
 				staticDefaultValue: staticArg,
 				start: id.start,
 				end: defValue ? defValue.end : id.end,
-				line: id.line,
-				column: id.column
+
+
 			});
 
 			if (!this.tokenizer.tk(TokenEnum.SymbolComma))
@@ -490,7 +483,7 @@ export default class TicoParser {
 	}
 
 	private functionExpression(): Node {
-		const tkPos = this.tokenizer.tkCursor();
+		const tkPos = this.tokenizer.csr();
 
 		const keyFunc = this.tokenizer.tk(TokenEnum.KeywordFunction);
 		if (!keyFunc)
@@ -498,23 +491,23 @@ export default class TicoParser {
 
 		const id = this.identifier() as IdentifierNode;
 		if (!id)
-			this.tokenizer.tkThrowErr(`Expected identifier`);
+			this.tokenizer.throwErr(`Expected identifier`);
 
 		if (!this.tokenizer.tk(TokenEnum.SymbolParOpen))
-			this.tokenizer.tkThrowErr(`Expected "("`);
+			this.tokenizer.throwErr(`Expected "("`);
 
 		const args = this.functionExpressionArgs();
 
 		if (!this.tokenizer.tk(TokenEnum.SymbolParClose))
-			this.tokenizer.tkThrowErr(`Expected ")"`);
+			this.tokenizer.throwErr(`Expected ")"`);
 
 		const branch = this.branch() as FunctionExpressionNode;
 		branch.type = NodeType.FunctionExpression;
 		branch.id = id;
 		branch.args = args;
 		branch.start = keyFunc.start;
-		branch.line = keyFunc.line;
-		branch.column = keyFunc.column;
+
+
 
 		return branch;
 	}
@@ -530,8 +523,8 @@ export default class TicoParser {
 			expression: retExpr,
 			start: retKey.start,
 			end: retExpr ? retExpr.end : retKey.end,
-			line: retKey.line,
-			column: retKey.column
+
+
 		} as ReturnStatementNode;
 	}
 
@@ -543,8 +536,8 @@ export default class TicoParser {
 			type: NodeType.BreakStatement,
 			start: breakKey.start,
 			end: breakKey.end,
-			line: breakKey.line,
-			column: breakKey.column
+
+
 		} as BreakStatementNode;
 	}
 
@@ -571,8 +564,8 @@ export default class TicoParser {
 			children: [],
 			start: 0,
 			end: 0,
-			line: 0,
-			column: 0
+
+
 		};
 
 		const singleExpression = this.tokenizer.tk(TokenEnum.SymbolCurlyBracketOpen) === null;
@@ -587,12 +580,12 @@ export default class TicoParser {
 
 				branch.end = node.end;
 				branch.children.push(node);
-			} else if (this.tokenizer.tk("EOF")) {
+			} else if (this.tokenizer.tkEof()) {
 				break;
 			}
 			else {
-				this.tokenizer.tkThrowErr(
-					`Unexpected token [${this.tokenizer.currTk().match[0]}]`
+				this.tokenizer.unexpectedTokenErr(
+					`Unexpected token [$tk]`
 				);
 			}
 
@@ -609,7 +602,7 @@ export default class TicoParser {
 			}
 		}
 
-		if (!ended) this.tokenizer.tkThrowErr(`Expected "}"`)
+		if (!ended) this.tokenizer.throwErr(`Expected "}"`)
 
 		return branch;
 	}
@@ -621,8 +614,8 @@ export default class TicoParser {
 			children: [],
 			start: 0,
 			end: 0,
-			line: 0,
-			column: 0
+
+
 		};
 
 		while (true) {
@@ -633,12 +626,11 @@ export default class TicoParser {
 
 				branch.end = node.end;
 				branch.children.push(node);
-			} else if (this.tokenizer.tk("EOF")) {
+			} else if (this.tokenizer.tkEof()) {
 				break;
-			}
-			else {
-				this.tokenizer.tkThrowErr(
-					`Unexpected token [${this.tokenizer.currTk().match[0]}]`
+			} else {
+				this.tokenizer.unexpectedTokenErr(
+					`Unexpected token [$tk]`
 				);
 			}
 		}
@@ -652,14 +644,16 @@ export default class TicoParser {
 
 		const main = this.mainBranch();
 
-		if (this.tokenizer.tokensLeft() > 1) {
-			this.tokenizer.tkThrowErr(`Unexpected token [${this.tokenizer.currTk().match[0]}]`);
+		if (!this.tokenizer.tkEof()) {
+			this.tokenizer.unexpectedTokenErr(
+				`Unexpected token [$tk]`
+			);
 		}
 
 		return main;
 	}
 
-	public static stringify(node: Node, options: StringifyOptions = {}, treefyOptions: TreefyOptions = {}): string {
+	public static stringify(source: string, node: Node, options: StringifyOptions = {}, treefyOptions: TreefyOptions = {}): string {
 		const { showPosition = true } = options;
 
 		const getTree = (n: Node) => {
@@ -667,7 +661,8 @@ export default class TicoParser {
 
 			const tree = {};
 
-			const position = () => `(L ${n.line}, C ${n.column})`;
+			const [l, c] = lineColumnFromString(source, n.start);
+			const position = () => `(L ${l + 1}, C ${c + 1})`;
 
 			switch (n.type) {
 				case NodeType.Branch: {

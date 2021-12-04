@@ -1,12 +1,8 @@
-import { lineColumnFromString } from "../utils";
+import { throwErrorAtPos } from "../utils";
 
-export type TokenDefinition = { type: any, regex: RegExp, ignore: boolean };
-export type Token = { type: any, match: RegExpMatchArray, start: number, end: number, line: number, column: number };
-
-export function throwAtPos(line: number, column: number, msg: string) {
-	const e = new SyntaxError(`At line ${line + 1} column ${column + 1}: ${msg}`);
-	return e;
-}
+type TokenType = number;
+type TokenDefinition = { type: TokenType, regex: string, ignore: boolean };
+export type Token = { type: TokenType, match: string[], start: number, end: number };
 
 /**
  * Main tokenizer class, takes multiple token definitions with it's type and regex and tokenizes
@@ -14,15 +10,22 @@ export function throwAtPos(line: number, column: number, msg: string) {
  */
 export default class Tokenizer {
 	/**
-	 * Skips tokens to be ignored, turn this off if want to use these ignored tokens for
-	 * syntax highlighting, for example
+	 * EOF type token
 	 */
-	public skipIgnore: boolean;
+	public static EOF: number = -1;
 	/**
-	 * Array containing all token definitions, identified by it's type and contains regex expression and
-	 * ignore flag.
+	 * Invalid type token
 	 */
-	private tokenDefs: TokenDefinition[];
+	public static INVALID: number = -2;
+
+	/**
+	 * Object containing all token definitions
+	 */
+	private tokenDefs: { [key: TokenType]: TokenDefinition };
+	/**
+	 * Compiled global regex expression
+	 */
+	private compiledRegex: RegExp;
 	/**
 	 * The current source being tokenized
 	 */
@@ -36,21 +39,20 @@ export default class Tokenizer {
 	 */
 	private cursor: number;
 	/**
-	 * All the tokens from the tokenization step
+	 * Array containing all the tokens tokenized
 	 */
 	private tokens: Token[];
 	/**
-	 * Total number of tokens from the tokenization step
+	 * Number of tokens tokenized
 	 */
 	private numTokens: number;
 	/**
-	 * Cursor that points at a token
+	 * Token cursor
 	 */
-	private tokenCursor: number;
+	private tkCursor: number;
 
 	public constructor() {
-		this.skipIgnore = true;
-		this.tokenDefs = [];
+		this.tokenDefs = {};
 		this.source = "";
 		this.sourceLength = 0;
 		this.cursor = 0;
@@ -58,18 +60,64 @@ export default class Tokenizer {
 
 	/**
 	 * Adds a token definition
-	 * @param {any} type - The type of the token, can be any type of value
-	 * @param {RegExp} regex - The regex expression used to tokenize this token
-	 * @param {boolean} [ignore=false] - Should this token be ignored? Use this for whitespaces or comments
+	 * @param {TokenType} type The type of the token, can be any type of value
+	 * @param {string} regexes A array of expressions to be used
+	 * @param {boolean} [ignore=false] Should this token be ignored? Use this for whitespaces or comments
 	 */
-	public addTokenDefinition(type: any, regex: RegExp, ignore: boolean = false): void {
-		regex = new RegExp(`^${regex.source}`);
-		this.tokenDefs.push({ type, regex, ignore });
+	public addTokenDefinition(type: TokenType, regexes: RegExp[], ignore: boolean = false): void {
+		let regStr = "";
+
+		const numExpressions = regexes.length;
+		if (numExpressions === 0) throw new Error(`Can't provide 0 expressions for a token definition`);
+		if (numExpressions === 1) {
+			regStr += regexes[0].source;
+		} else {
+			for (let i = 0; i < numExpressions; i++) {
+				regStr += "(?:";
+				regStr += regexes[i].source;
+				regStr += ")";
+				if (i < numExpressions - 1) regStr += "|";
+			}
+		}
+
+		this.tokenDefs[type] = { type, regex: regStr, ignore };
 	}
 
 	/**
-	 * Initializes the tokenization step
-	 * @param {string} source - The actual source code used to tokenize
+	 * Returns if the tokenizer is at end of file
+	 * @returns {boolean}
+	 */
+	private eof(): boolean { return this.cursor >= this.sourceLength; }
+
+	/**
+	 * Compiles the regex combining all the token definitions, for a better performance
+	 */
+	private compileRegex() {
+		let regStr = "^(?:";
+		const definitions = Object.values(this.tokenDefs);
+		const numDefinitions = definitions.length;
+
+		for (let i = 0; i < numDefinitions; i++) {
+			const def = definitions[i];
+			regStr += `(?<tk${def.type}>`;
+
+			regStr += def.regex;
+
+			regStr += ")";
+
+			if (i < numDefinitions - 1) {
+				regStr += "|";
+			}
+		}
+
+		regStr += ")";
+
+		this.compiledRegex = new RegExp(regStr);
+	}
+
+	/**
+	 * Initializes the tokenizer
+	 * @param {string} source The actual source code to be tokenized
 	 */
 	private init(source: string): void {
 		this.source = source;
@@ -77,72 +125,76 @@ export default class Tokenizer {
 		this.cursor = 0;
 		this.tokens = [];
 		this.numTokens = 0;
-		this.tokenCursor = 0;
+		this.tkCursor = 0;
+		this.compileRegex();
 	}
 
 	/**
-	 * Is the tokenization step reached EOF?
-	 * @returns {boolean} Reached EOF?
+	 * Get more info about a match
+	 * @param {RegExpExecArray} match The expression match to grab infp
+	 * @returns {[TokenDefinition, string[]]} The token type, groups and token definition
 	 */
-	private EOF(): boolean {
-		return this.cursor >= this.sourceLength;
-	}
+	private getMatchInfo(match: RegExpExecArray): [TokenDefinition, string[]] {
+		let groups = Object.keys(match.groups);
+		let numGroups = groups.length;
+		let type: TokenType = null;
 
-	/**
-	 * Gets the next token from the source string cursor
-	 * @returns {Token} The next token
-	 */
-	private getNextToken(): Token {
-		// Let's tokenize from the cursor position
-		const str = this.source.slice(this.cursor);
-		let tk: Token = null;
-
-		// Token should be ignored?
-		let tkIgnore: boolean = false;
-
-		// Go for each token definition, there should be a better way to do this
-		for (const { type, regex, ignore } of this.tokenDefs) {
-			// Matched the regex in the sliced string
-			const matched = regex.exec(str);
-
-			if (matched) {
-				// Set the matched object index to the cursor position
-				matched.index = this.cursor;
-
-				// Construct the token object
-				const newToken: Token = {
-					type,
-					match: matched,
-					start: this.cursor,
-					end: this.cursor + matched[0].length,
-					line: -1,
-					column: -1,
-				};
-
-				// Set the current matched token to this token
-                // if current token is null or this token length is bigger
-                // than the current token
-				if (tk === null || newToken.match[0].length > tk.match[0].length) {
-					tk = newToken;
-					tkIgnore = ignore;
+		for (let i = 0; i < numGroups; i++) {
+			if (match.groups[groups[i]] !== undefined) {
+				if (type === null) {
+					type = Number(groups[i].slice(2));
 				}
 			}
 		}
 
-		// A token was found
-		if (tk !== null) {
-			// Walk the cursor
-			this.cursor += tk.match[0].length;
+		if (type === null)
+			throw new Error(`Couldn't find type`);
 
-			// This token should be ignored, so get the next token
-			if (tkIgnore && this.skipIgnore) {
-				tk = this.getNextToken();
+		const matchGroups = match.filter(value => value !== undefined);
+
+		return [this.tokenDefs[type], matchGroups];
+	}
+
+	/**
+	 * Gets the next token at cursor pos
+	 * @returns {Token} The next token
+	 */
+	private next(): Token {
+		// Match string after the cursor pos
+		const str = this.source.slice(this.cursor);
+
+		// Get a match from the compiled regex
+		const match = this.compiledRegex.exec(str);
+
+		// Matched token
+		let tk: Token = null;
+
+		// Found something
+		if (match) {
+			// Grab info about matched string
+			const [def, groups] = this.getMatchInfo(match);
+
+			// This token should be ignored
+			if (def.ignore) {
+				// Walk forward the cursor
+				this.cursor += match[0].length;
+
+				tk = this.next();
+			// Build the token
+			} else {
+				tk = {
+					type: def.type,
+					match: groups,
+					start: this.cursor,
+					end: this.cursor + match[0].length
+				};
+				// Walk forward the cursor
+				this.cursor += match[0].length;
 			}
-
-		// A token wasn't found
+		// Didn't found something
 		} else {
 			// Found a invalid cahracter, return a invalid token
-			if (!this.EOF()) {
+			if (!this.eof()) {
 				// Try to get a somewhat relevant token, by matching word
 				let tkGet = (/^\w+/).exec(str);
 
@@ -151,125 +203,115 @@ export default class Tokenizer {
 					tkGet = (/^./).exec(str);
 				}
 				tk = {
-					type: "INVALID",
+					type: Tokenizer.INVALID,
 					match: tkGet,
 					start: this.cursor,
-					end: this.cursor + tkGet[0].length,
-					line: -1,
-					column: -1
+					end: this.cursor + tkGet[0].length
 				};
 
-				// Walk the cursor
+				// Walk forward the cursor
 				this.cursor += tkGet[0].length;
-			// Reached EOF of the string
+				// Reached EOF of the string
 			} else {
 				// Return a EOF token
 				tk = {
-					type: "EOF",
+					type: Tokenizer.EOF,
 					match: null,
 					start: this.cursor,
 					end: this.cursor,
-					line: -1,
-					column: -1
 				};
 			}
 		}
-
-		// Set the line and column of the token
-		const [line, column] = lineColumnFromString(this.source, tk.start);
-		tk.line = line;
-		tk.column = column;
 
 		return tk;
 	}
 
 	/**
-	 * Main tokenization function, tokenizes the entire source string
-	 * @param {string} str - The source string
+	 * Tokenizes a source string
+	 * @param {string} source The actual source code to be tokenized
 	 */
-	public tokenize(str: string): void {
-		// Initializes this tokenizer providing a string
-		this.init(str);
+	public tokenize(source: string): void {
+		this.init(source);
 
-		// Keeps tokenizing until reaches EOF
 		while (true) {
-			const tk = this.getNextToken();
+			const tk = this.next();
 			this.tokens.push(tk);
 			this.numTokens++;
 
-			// Reached EOF
-			if (tk.type === "EOF") break;
+			if (tk.type === Tokenizer.EOF) break;
 		}
 	}
 
 	/**
-	 * Returns the current token cursor position
-	 * @returns {number} position
+	 * Returns the current token position
+	 * @returns {number} The token position
 	 */
-	public tkCursor(): number { return this.tokenCursor; }
+	public csr(): number { return this.tkCursor; }
 
 	/**
 	 * Returns the current token that matches the type or null if it don't match.
 	 * If it matches, it advances to the next token
-	 * @param {any} type - The token type to match 
+	 * @param {any} type The token type to match 
 	 * @returns {Token} The current token or null
 	 */
-	public tk(type: any): Token {
-		// Out of range, return null
-		if (this.tokenCursor >= this.numTokens) return null;
+	public tk(type: TokenType, goForward: boolean = true): Token {
+		const currTk = this.tokens[this.tkCursor];
 
-		// If current token type is the same as the provided type, return it
-		if (this.tokens[this.tokenCursor].type === type) {
-			const tk = this.tokens[this.tokenCursor];
-
-			// Walk the token cursor
-			this.tokenCursor += 1;
-			return tk;
+		if (currTk.type === type) {
+			if (goForward) this.tkCursor += 1;
+			return currTk;
 		}
 
 		return null;
 	}
 
 	/**
-	 * Returns the current token
+	 * Just returns the current token and advances to the next token
 	 * @returns {Token} The current token
 	 */
-	public currTk(): Token {
-		return this.tokens[this.tokenCursor];
+	public tkNext(): Token {
+		return this.tokens[this.tkCursor++];
 	}
 
 	/**
-	 * Go back one pos of the token cursor
+	 * Returns if the current token is eof
+	 * @returns {boolean} Is eof?
 	 */
-	public tkBack() { this.tokenCursor -= 1; }
+	public tkEof(): boolean { return this.tokens[this.tkCursor].type === Tokenizer.EOF; }
 
 	/**
 	 * Returns the token position to the position provided
-	 * @param {number} pos - The position to return 
+	 * @param {number} pos The position to return to
 	 * @returns {null}
 	 */
-	public tkRet(pos: number): null { this.tokenCursor = pos; return null; }
+	public tkRet(pos: number): null { this.tkCursor = pos; return null; }
 
 	/**
 	 * Throws the error message at the current token position
-	 * @param {string} msg - The error message
+	 * @param {string} msg The error message
 	 */
-	public tkThrowErr(msg: string) {
-		const currTk = this.currTk();
-		throw new SyntaxError(`At line ${currTk.line + 1} column ${currTk.column + 1}: ${msg}`);
+	public throwErr(msg: string) {
+		throwErrorAtPos(this.source, this.tokens[this.tkCursor].start, `At ($line:$column) : ${msg}`);
 	}
 
 	/**
-	 * Gets the number of tokens left to use
-	 * @returns {number} The number of left tokens
+	 * Throws a unexpected token error
+	 * @param {string} msg The error message
 	 */
-	public tokensLeft(): number { return this.numTokens - this.tokenCursor; }
+	public unexpectedTokenErr(msg: string) {
+		const str = this.source.slice(this.tokens[this.tkCursor].start);
 
-	/**
-	 * Returns a copy of the tokenized tokens
-	 * @returns {Token[]} The array of tokens copy
-	 */
-	public getTokens(): Token[] { return [...this.tokens]; }
+		// Try to get a somewhat relevant token, by matching word
+		let tkGet = (/^\w+/).exec(str);
+		// Else return the character
+		if (tkGet === null) {
+			tkGet = (/^./).exec(str);
+		}
+
+		msg = msg.replace(/\$tk/g, tkGet[0]);
+
+		this.throwErr(msg);
+	}
 
 	/**
 	 * Returns a substring of the source string providing the start and end positions

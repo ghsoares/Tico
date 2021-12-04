@@ -27,8 +27,6 @@ export declare type Node = {
     type: NodeType;
     start: number;
     end: number;
-    line: number;
-    column: number;
 };
 /**
  * Branch node type, one of the main nodes that divides the program into scopes
@@ -159,6 +157,7 @@ export declare type TicoFunctions = {
     [key: string]: (...args: any[]) => any;
 };
 export default class TicoProgram {
+    private sourceCode;
     private mainBranch;
     private variables;
     private functions;
@@ -167,7 +166,8 @@ export default class TicoProgram {
     private waitMS;
     private onStdout;
     private onStderr;
-    constructor(main: BranchNode);
+    constructor(sourceCode: string);
+    private throwError;
     private evaluateExpression;
     private evaluateBinaryExpression;
     private evaluateNegateExpression;
@@ -187,5 +187,4 @@ export default class TicoProgram {
     setStdout(callback: (what: any) => any): void;
     setStderr(callback: (what: any) => any): void;
     run(variables?: TicoVariables, functions?: TicoFunctions): Promise<any>;
-    static fromSourceCode(source: string): TicoProgram;
 }

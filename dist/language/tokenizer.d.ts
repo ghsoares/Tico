@@ -1,32 +1,31 @@
-export declare type TokenDefinition = {
-    type: any;
-    regex: RegExp;
-    ignore: boolean;
-};
+declare type TokenType = number;
 export declare type Token = {
-    type: any;
-    match: RegExpMatchArray;
+    type: TokenType;
+    match: string[];
     start: number;
     end: number;
-    line: number;
-    column: number;
 };
-export declare function throwAtPos(line: number, column: number, msg: string): SyntaxError;
 /**
  * Main tokenizer class, takes multiple token definitions with it's type and regex and tokenizes
  * a source string into tokens.
  */
 export default class Tokenizer {
     /**
-     * Skips tokens to be ignored, turn this off if want to use these ignored tokens for
-     * syntax highlighting, for example
+     * EOF type token
      */
-    skipIgnore: boolean;
+    static EOF: number;
     /**
-     * Array containing all token definitions, identified by it's type and contains regex expression and
-     * ignore flag.
+     * Invalid type token
+     */
+    static INVALID: number;
+    /**
+     * Object containing all token definitions
      */
     private tokenDefs;
+    /**
+     * Compiled global regex expression
+     */
+    private compiledRegex;
     /**
      * The current source being tokenized
      */
@@ -40,87 +39,93 @@ export default class Tokenizer {
      */
     private cursor;
     /**
-     * All the tokens from the tokenization step
+     * Array containing all the tokens tokenized
      */
     private tokens;
     /**
-     * Total number of tokens from the tokenization step
+     * Number of tokens tokenized
      */
     private numTokens;
     /**
-     * Cursor that points at a token
+     * Token cursor
      */
-    private tokenCursor;
+    private tkCursor;
     constructor();
     /**
      * Adds a token definition
-     * @param {any} type - The type of the token, can be any type of value
-     * @param {RegExp} regex - The regex expression used to tokenize this token
-     * @param {boolean} [ignore=false] - Should this token be ignored? Use this for whitespaces or comments
+     * @param {TokenType} type The type of the token, can be any type of value
+     * @param {string} regexes A array of expressions to be used
+     * @param {boolean} [ignore=false] Should this token be ignored? Use this for whitespaces or comments
      */
-    addTokenDefinition(type: any, regex: RegExp, ignore?: boolean): void;
+    addTokenDefinition(type: TokenType, regexes: RegExp[], ignore?: boolean): void;
     /**
-     * Initializes the tokenization step
-     * @param {string} source - The actual source code used to tokenize
+     * Returns if the tokenizer is at end of file
+     * @returns {boolean}
+     */
+    private eof;
+    /**
+     * Compiles the regex combining all the token definitions, for a better performance
+     */
+    private compileRegex;
+    /**
+     * Initializes the tokenizer
+     * @param {string} source The actual source code to be tokenized
      */
     private init;
     /**
-     * Is the tokenization step reached EOF?
-     * @returns {boolean} Reached EOF?
+     * Get more info about a match
+     * @param {RegExpExecArray} match The expression match to grab infp
+     * @returns {[TokenDefinition, string[]]} The token type, groups and token definition
      */
-    private EOF;
+    private getMatchInfo;
     /**
-     * Gets the next token from the source string cursor
+     * Gets the next token at cursor pos
      * @returns {Token} The next token
      */
-    private getNextToken;
+    private next;
     /**
-     * Main tokenization function, tokenizes the entire source string
-     * @param {string} str - The source string
+     * Tokenizes a source string
+     * @param {string} source The actual source code to be tokenized
      */
-    tokenize(str: string): void;
+    tokenize(source: string): void;
     /**
-     * Returns the current token cursor position
-     * @returns {number} position
+     * Returns the current token position
+     * @returns {number} The token position
      */
-    tkCursor(): number;
+    csr(): number;
     /**
      * Returns the current token that matches the type or null if it don't match.
      * If it matches, it advances to the next token
-     * @param {any} type - The token type to match
+     * @param {any} type The token type to match
      * @returns {Token} The current token or null
      */
-    tk(type: any): Token;
+    tk(type: TokenType, goForward?: boolean): Token;
     /**
-     * Returns the current token
+     * Just returns the current token and advances to the next token
      * @returns {Token} The current token
      */
-    currTk(): Token;
+    tkNext(): Token;
     /**
-     * Go back one pos of the token cursor
+     * Returns if the current token is eof
+     * @returns {boolean} Is eof?
      */
-    tkBack(): void;
+    tkEof(): boolean;
     /**
      * Returns the token position to the position provided
-     * @param {number} pos - The position to return
+     * @param {number} pos The position to return to
      * @returns {null}
      */
     tkRet(pos: number): null;
     /**
      * Throws the error message at the current token position
-     * @param {string} msg - The error message
+     * @param {string} msg The error message
      */
-    tkThrowErr(msg: string): void;
+    throwErr(msg: string): void;
     /**
-     * Gets the number of tokens left to use
-     * @returns {number} The number of left tokens
+     * Throws a unexpected token error
+     * @param {string} msg The error message
      */
-    tokensLeft(): number;
-    /**
-     * Returns a copy of the tokenized tokens
-     * @returns {Token[]} The array of tokens copy
-     */
-    getTokens(): Token[];
+    unexpectedTokenErr(msg: string): void;
     /**
      * Returns a substring of the source string providing the start and end positions
      * @param {number} start Substring start
@@ -129,3 +134,4 @@ export default class Tokenizer {
      */
     sourceSubstr(start: number, end: number): string;
 }
+export {};

@@ -1,3 +1,6 @@
+export const globalOptions = {
+    tabIndentSize: 4
+};
 /**
  * Treefy function, turns recursively a object into a prettified tree
  * @example
@@ -304,23 +307,60 @@ export function unescapeString(str) {
     return str;
 }
 /**
- * Returns the line and column position of a cursor in a string
+ * Returns the line and column position at character position in a string
  * @param {string} str The string to be used
- * @param {number} cursor The cursor position in the range of the string length
+ * @param {number} pos The position in the range of the string length
  * @returns {[number, number]} Line and column of the cursor
  */
-export function lineColumnFromString(str, cursor) {
-    let [cursorLine, cursorColumn] = [0, -1];
-    for (let i = 0; i <= cursor; i++) {
+export function lineColumnFromString(str, pos) {
+    let [line, column] = [0, -1];
+    for (let i = 0; i <= pos; i++) {
         const c = str[i];
         if (c !== "\r")
-            cursorColumn += 1;
+            column += 1;
         if (c === "\t")
-            cursorColumn += 3;
+            column += globalOptions.tabIndentSize - 1;
         if (c === "\n") {
-            cursorLine += 1;
-            cursorColumn = -1;
+            line += 1;
+            column = -1;
         }
     }
-    return [cursorLine, cursorColumn];
+    return [line, column];
+}
+/**
+ * Throws an error at string position, with a preview of where is the error
+ * @param {string} str The string to throw error
+ * @param {string} pos The position of the error
+ * @param {string} msg The error message
+ */
+export function throwErrorAtPos(str, pos, msg) {
+    pos = Math.max(Math.min(pos, str.length - 1), 0);
+    const [l, c] = lineColumnFromString(str, pos);
+    msg = msg
+        .replace(/\$line/g, "" + (l + 1))
+        .replace(/\$column/g, "" + (c + 1));
+    const lMin = Math.max(l - 3, 0);
+    const cMin = Math.max(c - 10, 0);
+    const cMax = c + 10;
+    const lines = str.split(/\r\n|\r/g).slice(lMin, l + 1);
+    let cursorOffset = 0;
+    const locationStr = lines.map((line, idx) => {
+        let lineS = "";
+        if (cMin > 0) {
+            lineS += "... ";
+            if (idx === lines.length - 1)
+                cursorOffset += 4;
+        }
+        lineS += line.slice(cMin, Math.min(cMax, line.length)).replace(/\t/g, " ".repeat(globalOptions.tabIndentSize));
+        if (cMax < line.length) {
+            lineS += " ...";
+        }
+        const lineNumber = `${lMin + idx + 1}`.padEnd(6) + " | ";
+        if (idx === lines.length - 1)
+            cursorOffset += lineNumber.length;
+        line = lineNumber + lineS;
+        return line;
+    }).join("\n");
+    const errMsg = msg + "\n\n" + locationStr + "\n" + " ".repeat(cursorOffset + c) + "^";
+    throw new Error(errMsg);
 }
