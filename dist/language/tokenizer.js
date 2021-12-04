@@ -9,6 +9,7 @@ export default class Tokenizer {
         this.source = "";
         this.sourceLength = 0;
         this.cursor = 0;
+        this.skipIgnore = true;
     }
     /**
      * Adds a token definition
@@ -109,9 +110,10 @@ export default class Tokenizer {
             // Grab info about matched string
             const [def, groups] = this.getMatchInfo(match);
             // This token should be ignored
-            if (def.ignore) {
+            if (def.ignore && !this.skipIgnore) {
                 // Walk forward the cursor
                 this.cursor += match[0].length;
+                // Get the next token instead
                 tk = this.next();
                 // Build the token
             }

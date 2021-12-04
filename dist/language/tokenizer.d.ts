@@ -19,6 +19,10 @@ export default class Tokenizer {
      */
     static INVALID: number;
     /**
+     * Skips the ignore tokens? Turn off if want to parse those tokens
+     */
+    skipIgnore: boolean;
+    /**
      * Object containing all token definitions
      */
     private tokenDefs;
