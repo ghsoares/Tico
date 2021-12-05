@@ -450,16 +450,18 @@ export default class TicoProgram {
         };
         this.functions = {
             'write': (what) => {
+                const str = unescapeString("" + what);
                 if (this.onStdout) {
-                    return this.onStdout(what);
+                    return this.onStdout(str);
                 }
-                return process.stdout.write(unescapeString("" + what));
+                return process.stdout.write(str);
             },
             'writeLine': (what) => {
+                const str = unescapeString("" + what) + "\n";
                 if (this.onStdout) {
-                    return this.onStdout(what);
+                    return this.onStdout(str);
                 }
-                return process.stdout.write(unescapeString("" + what) + "\n");
+                return process.stdout.write(str);
             },
             'fg': (r, g, b) => {
                 return process.stdout.write(foreground([r, g, b]));
