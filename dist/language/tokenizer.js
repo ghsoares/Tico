@@ -91,7 +91,7 @@ export default class Tokenizer {
         }
         if (type === null)
             throw new Error(`Couldn't find type`);
-        const matchGroups = match.filter(value => value !== undefined);
+        const matchGroups = match.slice(1).filter(value => value !== undefined);
         return [this.tokenDefs[type], matchGroups];
     }
     /**
