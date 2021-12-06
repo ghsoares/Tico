@@ -727,6 +727,8 @@ export default class TicoProgram {
 		this.mainBranch.functions = {};
 		this.mainBranch.stopped = false;
 		this.execBatchStart = Date.now();
+		this.stdoutBuffer = '';
+		this.stderrBuffer = '';
 
 		return await this.runBranch(this.mainBranch);
 	}
