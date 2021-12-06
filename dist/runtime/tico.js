@@ -40,6 +40,7 @@ export default class TicoProgram {
     }
     async evaluateExpression(branch, node) {
         if (Date.now() - this.execBatchStart > this.execBatchMS) {
+            this.flushStdBuffers();
             await wait(this.waitMS);
             this.execBatchStart = Date.now();
         }
@@ -85,6 +86,7 @@ export default class TicoProgram {
             }
         }
         catch (e) {
+            this.flushStdBuffers();
             if (this.onStderr) {
                 return this.onStderr(e);
             }
@@ -432,6 +434,16 @@ export default class TicoProgram {
         }
         return retValue;
     }
+    flushStdBuffers() {
+        if (this.onStdout) {
+            this.onStdout(this.stdoutBuffer);
+            this.stdoutBuffer = "";
+        }
+        if (this.onStderr) {
+            this.onStderr(this.stderrBuffer);
+            this.stderrBuffer = "";
+        }
+    }
     setExecBatchDuration(ms) {
         this.execBatchMS = ms;
     }
@@ -452,14 +464,16 @@ export default class TicoProgram {
             'write': (what) => {
                 const str = unescapeString("" + what);
                 if (this.onStdout) {
-                    return this.onStdout(str);
+                    this.stdoutBuffer += str;
+                    return true;
                 }
                 return process.stdout.write(str);
             },
             'writeLine': (what) => {
                 const str = unescapeString("" + what) + "\n";
                 if (this.onStdout) {
-                    return this.onStdout(str);
+                    this.stdoutBuffer += str;
+                    return true;
                 }
                 return process.stdout.write(str);
             },

@@ -227,11 +227,12 @@ export default class Tokenizer {
         const str = this.source.slice(this.tokens[this.tkCursor].start);
         // Try to get a somewhat relevant token, by matching word
         let tkGet = (/^\w+/).exec(str);
+        let tkStr = tkGet ? tkGet[0] : '';
         // Else return the character
         if (tkGet === null) {
-            tkGet = (/^./).exec(str);
+            tkStr = str[0];
         }
-        msg = msg.replace(/\$tk/g, tkGet[0]);
+        msg = msg.replace(/\$tk/g, tkStr);
         this.throwErr(msg);
     }
     /**

@@ -164,6 +164,8 @@ export default class TicoProgram {
     private execBatchStart;
     private execBatchMS;
     private waitMS;
+    private stdoutBuffer;
+    private stderrBuffer;
     private onStdout;
     private onStderr;
     constructor(sourceCode: string);
@@ -182,6 +184,7 @@ export default class TicoProgram {
     private evaluateFunctionCall;
     private evaluateFunction;
     private runBranch;
+    private flushStdBuffers;
     setExecBatchDuration(ms: number): void;
     setWaitDuration(ms: number): void;
     setStdout(callback: (what: any) => any): void;
