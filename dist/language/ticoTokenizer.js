@@ -1,3 +1,5 @@
+import { TicoError } from "../runtime/tico";
+import { buildErrorAtPos } from "../utils";
 import Tokenizer from "./tokenizer";
 export var TokenEnum;
 (function (TokenEnum) {
@@ -373,5 +375,14 @@ export default class TicoTokenizer extends Tokenizer {
             }
             this.addTokenDefinition(i, expressions);
         }
+    }
+    throwErr(msg) {
+        const start = this.tokens[this.tkCursor].start;
+        const e = buildErrorAtPos(this.source, start, `At ($line:$column): ${msg}`);
+        const err = new TicoError();
+        err.message = e.message;
+        err.pos = start;
+        err.stack = e.stack;
+        throw err;
     }
 }

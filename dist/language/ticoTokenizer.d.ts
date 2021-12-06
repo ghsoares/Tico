@@ -67,4 +67,5 @@ export default class TicoTokenizer extends Tokenizer {
     private addConditionalOps;
     private addSymbols;
     private addExtra;
+    throwErr(msg: string): void;
 }

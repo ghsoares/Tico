@@ -59,6 +59,9 @@ export type TreefyOptions = {
 	undefinedColor?: [Color, Color];
 };
 
+/**
+ * Global options for utils
+ */
 export const globalOptions: GlobalOptions = {
 	tabIndentSize: 4
 };
@@ -434,12 +437,13 @@ export function lineColumnFromString(str: string, pos: number): [number, number]
 }
 
 /**
- * Throws an error at string position, with a preview of where is the error
+ * Build an error at string position, with a preview of where is the error
  * @param {string} str The string to throw error
  * @param {string} pos The position of the error
  * @param {string} msg The error message
+ * @returns {Error} The builded error
  */
-export function throwErrorAtPos(str: string, pos: number, msg: string) {
+export function buildErrorAtPos(str: string, pos: number, msg: string): Error {
 	pos = Math.max(Math.min(pos, str.length - 1), 0);
 
 	const [l, c] = lineColumnFromString(str, pos);
@@ -478,5 +482,18 @@ export function throwErrorAtPos(str: string, pos: number, msg: string) {
 
 	const errMsg = msg + "\n\n" + locationStr + "\n" + " ".repeat(cursorOffset) + "^";
 
-	throw new Error(errMsg);
+	const err = new Error();
+	err.message = errMsg;
+
+	return err;
+}
+
+/**
+ * Throws an error at string position, with a preview of where is the error
+ * @param {string} str The string to throw error
+ * @param {string} pos The position of the error
+ * @param {string} msg The error message
+ */
+export function throwErrorAtPos(str: string, pos: number, msg: string) {
+	throw buildErrorAtPos(str, pos, msg);
 }

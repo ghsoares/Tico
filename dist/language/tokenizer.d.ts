@@ -1,4 +1,9 @@
 declare type TokenType = number;
+declare type TokenDefinition = {
+    type: TokenType;
+    regex: string;
+    ignore: boolean;
+};
 export declare type Token = {
     type: TokenType;
     match: string[];
@@ -25,35 +30,37 @@ export default class Tokenizer {
     /**
      * Object containing all token definitions
      */
-    private tokenDefs;
+    protected tokenDefs: {
+        [key: TokenType]: TokenDefinition;
+    };
     /**
      * Compiled global regex expression
      */
-    private compiledRegex;
+    protected compiledRegex: RegExp;
     /**
      * The current source being tokenized
      */
-    private source;
+    protected source: string;
     /**
      * The length of the current source being tokenized
      */
-    private sourceLength;
+    protected sourceLength: number;
     /**
      * The source string cursor, points at a character on the position of this cursor
      */
-    private cursor;
+    protected cursor: number;
     /**
      * Array containing all the tokens tokenized
      */
-    private tokens;
+    protected tokens: Token[];
     /**
      * Number of tokens tokenized
      */
-    private numTokens;
+    protected numTokens: number;
     /**
      * Token cursor
      */
-    private tkCursor;
+    protected tkCursor: number;
     constructor();
     /**
      * Adds a token definition

@@ -1,3 +1,6 @@
+/**
+ * Global options for utils
+ */
 export const globalOptions = {
     tabIndentSize: 4
 };
@@ -328,12 +331,13 @@ export function lineColumnFromString(str, pos) {
     return [line, column];
 }
 /**
- * Throws an error at string position, with a preview of where is the error
+ * Build an error at string position, with a preview of where is the error
  * @param {string} str The string to throw error
  * @param {string} pos The position of the error
  * @param {string} msg The error message
+ * @returns {Error} The builded error
  */
-export function throwErrorAtPos(str, pos, msg) {
+export function buildErrorAtPos(str, pos, msg) {
     pos = Math.max(Math.min(pos, str.length - 1), 0);
     const [l, c] = lineColumnFromString(str, pos);
     msg = msg
@@ -363,5 +367,16 @@ export function throwErrorAtPos(str, pos, msg) {
     }).join("\n");
     cursorOffset += (c - cMin);
     const errMsg = msg + "\n\n" + locationStr + "\n" + " ".repeat(cursorOffset) + "^";
-    throw new Error(errMsg);
+    const err = new Error();
+    err.message = errMsg;
+    return err;
+}
+/**
+ * Throws an error at string position, with a preview of where is the error
+ * @param {string} str The string to throw error
+ * @param {string} pos The position of the error
+ * @param {string} msg The error message
+ */
+export function throwErrorAtPos(str, pos, msg) {
+    throw buildErrorAtPos(str, pos, msg);
 }

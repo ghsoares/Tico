@@ -5,4 +5,4 @@ import TicoProgram from "./runtime/tico";
 const source = fs.readFileSync('src/test.tico', 'utf-8').replace(/\r\n/g, '\n');
 const program = new TicoProgram(source);
 
-program.run().then(val => console.log(val));
+program.run().then(val => console.log(val)).catch(e => console.error(e));

@@ -24,35 +24,35 @@ export default class Tokenizer {
 	/**
 	 * Object containing all token definitions
 	 */
-	private tokenDefs: { [key: TokenType]: TokenDefinition };
+	protected tokenDefs: { [key: TokenType]: TokenDefinition };
 	/**
 	 * Compiled global regex expression
 	 */
-	private compiledRegex: RegExp;
+	protected compiledRegex: RegExp;
 	/**
 	 * The current source being tokenized
 	 */
-	private source: string;
+	protected source: string;
 	/**
 	 * The length of the current source being tokenized
 	 */
-	private sourceLength: number;
+	protected sourceLength: number;
 	/**
 	 * The source string cursor, points at a character on the position of this cursor
 	 */
-	private cursor: number;
+	protected cursor: number;
 	/**
 	 * Array containing all the tokens tokenized
 	 */
-	private tokens: Token[];
+	protected tokens: Token[];
 	/**
 	 * Number of tokens tokenized
 	 */
-	private numTokens: number;
+	protected numTokens: number;
 	/**
 	 * Token cursor
 	 */
-	private tkCursor: number;
+	protected tkCursor: number;
 
 	public constructor() {
 		this.tokenDefs = {};

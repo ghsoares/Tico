@@ -54,6 +54,9 @@ export declare type TreefyOptions = {
      */
     undefinedColor?: [Color, Color];
 };
+/**
+ * Global options for utils
+ */
 export declare const globalOptions: GlobalOptions;
 /**
  * Treefy function, turns recursively a object into a prettified tree
@@ -127,6 +130,14 @@ export declare function unescapeString(str: string): string;
  * @returns {[number, number]} Line and column of the cursor
  */
 export declare function lineColumnFromString(str: string, pos: number): [number, number];
+/**
+ * Build an error at string position, with a preview of where is the error
+ * @param {string} str The string to throw error
+ * @param {string} pos The position of the error
+ * @param {string} msg The error message
+ * @returns {Error} The builded error
+ */
+export declare function buildErrorAtPos(str: string, pos: number, msg: string): Error;
 /**
  * Throws an error at string position, with a preview of where is the error
  * @param {string} str The string to throw error

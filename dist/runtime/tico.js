@@ -1,6 +1,6 @@
 import TicoParser from "../language/ticoParser";
 import { TokenEnum } from "../language/ticoTokenizer";
-import { foregroundReset, foreground, unescapeString, background, backgroundReset, throwErrorAtPos } from "../utils";
+import { foregroundReset, foreground, unescapeString, background, backgroundReset, buildErrorAtPos } from "../utils";
 /**
  * Node type enum, contains all the node types used by Tico
  */
@@ -28,6 +28,8 @@ function wait(ms = 0) {
         setTimeout(resolve, ms);
     });
 }
+export class TicoError extends Error {
+}
 export default class TicoProgram {
     constructor(sourceCode) {
         this.sourceCode = sourceCode;
@@ -37,7 +39,13 @@ export default class TicoProgram {
         this.running = false;
     }
     throwError(msg, node) {
-        throwErrorAtPos(this.sourceCode, node.start, msg);
+        const start = node.start;
+        const e = buildErrorAtPos(this.sourceCode, start, `At ($line:$column): ${msg}`);
+        const err = new TicoError();
+        err.message = e.message;
+        err.pos = start;
+        err.stack = e.stack;
+        throw err;
     }
     async evaluateExpression(branch, node) {
         if (!this.running)

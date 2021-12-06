@@ -156,6 +156,9 @@ export declare type TicoVariables = {
 export declare type TicoFunctions = {
     [key: string]: (...args: any[]) => any;
 };
+export declare class TicoError extends Error {
+    pos: number;
+}
 export default class TicoProgram {
     private sourceCode;
     private mainBranch;
