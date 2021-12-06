@@ -230,52 +230,44 @@ export default class TicoProgram {
 			this.execBatchStart = Date.now();
 		}
 
-		try {
-			switch (node.type) {
-				case NodeType.Literal: {
-					return (node as LiteralNode).value;
-				}
-				case NodeType.BinaryExpression: {
-					return await this.evaluateBinaryExpression(branch, node as BinaryExpressionNode);
-				}
-				case NodeType.NegateExpression: {
-					return await this.evaluateNegateExpression(branch, node as NegateExpressionNode);
-				}
-				case NodeType.IfExpression: {
-					return await this.evaluateIfExpression(branch, node as IfExpressionNode);
-				}
-				case NodeType.WhileLoopExpression: {
-					return await this.evaluateWhileLoopExpression(branch, node as WhileLoopExpressionNode);
-				}
-				case NodeType.ForLoopExpression: {
-					return await this.evaluateForLoopExpression(branch, node as ForLoopExpressionNode);
-				}
-				case NodeType.Set: {
-					return await this.evaluateSet(branch, node as SetNode);
-				}
-				case NodeType.Identifier: {
-					return (await this.evaluateIdentifier(branch, node as IdentifierNode)).get();
-				}
-				case NodeType.FunctionExpression: {
-					return await this.evaluateFunctionCreate(branch, node as FunctionExpressionNode);
-				}
-				case NodeType.ReturnStatement: {
-					return await this.evaluateReturnStatement(branch, node as ReturnStatementNode);
-				}
-				case NodeType.BreakStatement: {
-					return await this.evaluateBreakStatement(branch, node as BreakStatementNode);
-				}
-				case NodeType.FunctionCall: {
-					return await this.evaluateFunctionCall(branch, node as FunctionCallNode);
-				}
-				default: this.throwError(`Not implemented`, node);
+		switch (node.type) {
+			case NodeType.Literal: {
+				return (node as LiteralNode).value;
 			}
-		} catch (e) {
-			this.flushStdBuffers();
-			if (this.onStderr && e !== 'TICO_PROGRAM_STOP') {
-				return this.onStderr(e);
+			case NodeType.BinaryExpression: {
+				return await this.evaluateBinaryExpression(branch, node as BinaryExpressionNode);
 			}
-			throw e;
+			case NodeType.NegateExpression: {
+				return await this.evaluateNegateExpression(branch, node as NegateExpressionNode);
+			}
+			case NodeType.IfExpression: {
+				return await this.evaluateIfExpression(branch, node as IfExpressionNode);
+			}
+			case NodeType.WhileLoopExpression: {
+				return await this.evaluateWhileLoopExpression(branch, node as WhileLoopExpressionNode);
+			}
+			case NodeType.ForLoopExpression: {
+				return await this.evaluateForLoopExpression(branch, node as ForLoopExpressionNode);
+			}
+			case NodeType.Set: {
+				return await this.evaluateSet(branch, node as SetNode);
+			}
+			case NodeType.Identifier: {
+				return (await this.evaluateIdentifier(branch, node as IdentifierNode)).get();
+			}
+			case NodeType.FunctionExpression: {
+				return await this.evaluateFunctionCreate(branch, node as FunctionExpressionNode);
+			}
+			case NodeType.ReturnStatement: {
+				return await this.evaluateReturnStatement(branch, node as ReturnStatementNode);
+			}
+			case NodeType.BreakStatement: {
+				return await this.evaluateBreakStatement(branch, node as BreakStatementNode);
+			}
+			case NodeType.FunctionCall: {
+				return await this.evaluateFunctionCall(branch, node as FunctionCallNode);
+			}
+			default: this.throwError(`Not implemented`, node);
 		}
 	}
 
@@ -756,7 +748,7 @@ export default class TicoProgram {
 			if (e === 'TICO_PROGRAM_STOP') {
 				return null;
 			}
-			throw e;
+			this.onStderr(e);
 		}
 	}
 
