@@ -134,9 +134,9 @@ export default class Tokenizer {
             if (!this.eof()) {
                 // Try to get a somewhat relevant token, by matching word
                 let tkGet = (/^\w+/).exec(str);
-                // Else return a character
+                // Else return the character
                 if (tkGet === null) {
-                    tkGet = (/^./).exec(str);
+                    tkGet = (/^[\s\S]/).exec(str);
                 }
                 tk = {
                     type: Tokenizer.INVALID,
@@ -227,12 +227,11 @@ export default class Tokenizer {
         const str = this.source.slice(this.tokens[this.tkCursor].start);
         // Try to get a somewhat relevant token, by matching word
         let tkGet = (/^\w+/).exec(str);
-        let tkStr = tkGet ? tkGet[0] : '';
         // Else return the character
         if (tkGet === null) {
-            tkStr = str[0];
+            tkGet = (/^[\s\S]/).exec(str);
         }
-        msg = msg.replace(/\$tk/g, tkStr);
+        msg = msg.replace(/\$tk/g, tkGet[0]);
         this.throwErr(msg);
     }
     /**
