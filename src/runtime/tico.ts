@@ -761,6 +761,7 @@ export default class TicoProgram {
 
 	public stop(): void {
 		this.running = false;
+		this.paused = false;
 	}
 
 	public pause(): void {

@@ -532,6 +532,7 @@ export default class TicoProgram {
     }
     stop() {
         this.running = false;
+        this.paused = false;
     }
     pause() {
         this.paused = true;
