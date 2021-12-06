@@ -746,9 +746,11 @@ export default class TicoProgram {
 
 		try {
 			const val = await this.runBranch(this.mainBranch);
+			this.running = false;
 			this.flushStdBuffers();
 			return val;
 		} catch (e) {
+			this.running = false;
 			this.flushStdBuffers();
 			if (e === 'TICO_PROGRAM_STOP') {
 				return null;
