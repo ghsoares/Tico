@@ -40,7 +40,7 @@ function calcPi(limit) {
 }
 
 calcPi(digits || 1000);
-write("\n")
+write("\n");
 
 
 

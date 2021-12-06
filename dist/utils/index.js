@@ -342,25 +342,26 @@ export function throwErrorAtPos(str, pos, msg) {
     const lMin = Math.max(l - 3, 0);
     const cMin = Math.max(c - 10, 0);
     const cMax = c + 10;
-    const lines = str.split(/\r\n|\r/g).slice(lMin, l + 1);
+    const lines = str.replace(/\t/g, '    ').split(/\r\n|\n/g).slice(lMin, l + 1);
     let cursorOffset = 0;
     const locationStr = lines.map((line, idx) => {
         let lineS = "";
         if (cMin > 0) {
             lineS += "... ";
-            if (idx === lines.length - 1)
+            if (idx === 2)
                 cursorOffset += 4;
         }
-        lineS += line.slice(cMin, Math.min(cMax, line.length)).replace(/\t/g, " ".repeat(globalOptions.tabIndentSize));
+        lineS += line.slice(cMin, Math.min(cMax, line.length));
         if (cMax < line.length) {
             lineS += " ...";
         }
         const lineNumber = `${lMin + idx + 1}`.padEnd(6) + " | ";
-        if (idx === lines.length - 1)
-            cursorOffset += lineNumber.length;
         line = lineNumber + lineS;
+        if (idx === 2)
+            cursorOffset += lineNumber.length;
         return line;
     }).join("\n");
-    const errMsg = msg + "\n\n" + locationStr + "\n" + " ".repeat(cursorOffset + c) + "^";
+    cursorOffset += (c - cMin);
+    const errMsg = msg + "\n\n" + locationStr + "\n" + " ".repeat(cursorOffset) + "^";
     throw new Error(errMsg);
 }

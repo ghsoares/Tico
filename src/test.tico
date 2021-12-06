@@ -1,0 +1,28 @@
+i = 1;
+max = max || 1000;
+
+while (i <= max) {
+	div3 = i % 3 == 0; 
+	div5 = i % 5 == 0;
+
+	if (div3) {
+		write("Fizz");
+	}
+	if (div5) {
+		write("Buzz");
+	}
+	if (!div3 && !div5) {
+		write(i);
+	}
+	
+	if (i < max) {
+		write(", ");
+	} else {
+		write("\n");
+	}
+
+	i = i + 1;
+}
+
+
+
