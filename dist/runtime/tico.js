@@ -443,11 +443,11 @@ export default class TicoProgram {
         return retValue;
     }
     flushStdBuffers() {
-        if (this.onStdout) {
+        if (this.onStdout && this.stdoutBuffer !== "") {
             this.onStdout(this.stdoutBuffer);
             this.stdoutBuffer = "";
         }
-        if (this.onStderr) {
+        if (this.onStderr && this.stderrBuffer !== "") {
             this.onStderr(this.stderrBuffer);
             this.stderrBuffer = "";
         }
@@ -516,9 +516,12 @@ export default class TicoProgram {
         this.running = true;
         this.paused = false;
         try {
-            return await this.runBranch(this.mainBranch);
+            const val = await this.runBranch(this.mainBranch);
+            this.flushStdBuffers();
+            return val;
         }
         catch (e) {
+            this.flushStdBuffers();
             if (e === 'TICO_PROGRAM_STOP') {
                 return null;
             }
