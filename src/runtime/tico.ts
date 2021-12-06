@@ -207,7 +207,7 @@ export default class TicoProgram {
 	}
 
 	private async evaluateExpression(branch: BranchNode, node: Node): Promise<any> {
-		if (!this.running) throw 'TICO_PROGRAM_STOP'; 
+		if (!this.running) throw 'TICO_PROGRAM_STOP';
 		if (this.paused) {
 			while (this.paused) {
 				await wait(this.waitMS);
@@ -425,17 +425,11 @@ export default class TicoProgram {
 		const isTrue = await this.evaluateExpression(branch, node.condition);
 
 		if (isTrue) {
-			node.parent = branch;
-			node.functions = {};
-			node.variables = {};
-			return await this.runBranch(node);
+			return await this.runBranch(node, branch);
 		} else if (node.next) {
 			if (node.next.type === NodeType.ElseExpression) {
 				const elseNode = node.next as ElseExpressionNode;
-				elseNode.parent = branch;
-				elseNode.functions = {};
-				elseNode.variables = {};
-				return await this.runBranch(elseNode);
+				return await this.runBranch(elseNode, branch);
 			} else if (node.next.type === NodeType.IfExpression) {
 				return await this.evaluateExpression(branch, node.next as IfExpressionNode)
 			}
@@ -447,10 +441,7 @@ export default class TicoProgram {
 
 		let isTrue = await this.evaluateExpression(branch, node.condition);
 		while (isTrue) {
-			node.parent = branch;
-			node.variables = {};
-			node.functions = {};
-			currVal = await this.runBranch(node);
+			currVal = await this.runBranch(node, branch);
 
 			isTrue = await this.evaluateExpression(branch, node.condition);
 			if (node.stopped) break;
@@ -466,10 +457,7 @@ export default class TicoProgram {
 
 		let isTrue = await this.evaluateExpression(branch, node.condition);
 		while (isTrue) {
-			node.parent = branch;
-			node.variables = {};
-			node.functions = {};
-			currVal = await this.runBranch(node);
+			currVal = await this.runBranch(node, branch);
 
 			await this.evaluateExpression(branch, node.iterate);
 			isTrue = await this.evaluateExpression(branch, node.condition);
@@ -621,34 +609,40 @@ export default class TicoProgram {
 				if (typeof f === 'function') {
 					return f.apply(null, args);
 				} else {
-					f.variables = {};
-					f.functions = {};
-					f.stopped = false;
-
 					const fArgs = f.args;
+					const variables: { [key: string]: any } = {};
 
 					for (let i = 0; i < fArgs.length; i++) {
 						const arg = fArgs[i];
 						const id = arg.id.id.match[0];
 						if (i >= args.length) {
 							if (arg.staticDefaultValue) {
-								f.variables[id] = arg.defaultValueEvaluated;
+								variables[id] = arg.defaultValueEvaluated;
 							} else {
-								f.variables[id] = await self.evaluateExpression(branch, arg.defaultValueExpression);
+								variables[id] = await self.evaluateExpression(branch, arg.defaultValueExpression);
 							}
 						} else {
-							f.variables[id] = args[i];
+							variables[id] = args[i];
 						}
 					}
 
-					return await self.runBranch(f);
+					return await self.runBranch(f, f.parent, variables);
 				}
 			}
 		};
 	}
 
-	private async runBranch(branch: BranchNode): Promise<any> {
+	private async runBranch(
+		branch: BranchNode,
+		parent: BranchNode,
+		variables: { [key: string]: any } = {},
+		functions: { [key: string]: FunctionExpressionNode } = {}
+	): Promise<any> {
 		let retValue = undefined;
+		branch.parent = parent;
+		branch.stopped = false;
+		branch.variables = variables;
+		branch.functions = functions;
 
 		for (const node of branch.children) {
 			const v = await this.evaluateExpression(branch, node);
@@ -685,7 +679,7 @@ export default class TicoProgram {
 	public setStderr(callback: (what: any) => any) {
 		this.onStderr = callback;
 	}
-	
+
 	public async run(
 		variables: TicoVariables = {},
 		functions: TicoFunctions = {}
@@ -735,9 +729,6 @@ export default class TicoProgram {
 			},
 			...functions,
 		};
-		this.mainBranch.variables = {};
-		this.mainBranch.functions = {};
-		this.mainBranch.stopped = false;
 		this.execBatchStart = Date.now();
 		this.stdoutBuffer = '';
 		this.stderrBuffer = '';
@@ -745,7 +736,7 @@ export default class TicoProgram {
 		this.paused = false;
 
 		try {
-			const val = await this.runBranch(this.mainBranch);
+			const val = await this.runBranch(this.mainBranch, null);
 			this.running = false;
 			this.flushStdBuffers();
 			return val;

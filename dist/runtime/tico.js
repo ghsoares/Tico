@@ -229,18 +229,12 @@ export default class TicoProgram {
     async evaluateIfExpression(branch, node) {
         const isTrue = await this.evaluateExpression(branch, node.condition);
         if (isTrue) {
-            node.parent = branch;
-            node.functions = {};
-            node.variables = {};
-            return await this.runBranch(node);
+            return await this.runBranch(node, branch);
         }
         else if (node.next) {
             if (node.next.type === NodeType.ElseExpression) {
                 const elseNode = node.next;
-                elseNode.parent = branch;
-                elseNode.functions = {};
-                elseNode.variables = {};
-                return await this.runBranch(elseNode);
+                return await this.runBranch(elseNode, branch);
             }
             else if (node.next.type === NodeType.IfExpression) {
                 return await this.evaluateExpression(branch, node.next);
@@ -251,10 +245,7 @@ export default class TicoProgram {
         let currVal = undefined;
         let isTrue = await this.evaluateExpression(branch, node.condition);
         while (isTrue) {
-            node.parent = branch;
-            node.variables = {};
-            node.functions = {};
-            currVal = await this.runBranch(node);
+            currVal = await this.runBranch(node, branch);
             isTrue = await this.evaluateExpression(branch, node.condition);
             if (node.stopped)
                 break;
@@ -266,10 +257,7 @@ export default class TicoProgram {
         await this.evaluateExpression(branch, node.init);
         let isTrue = await this.evaluateExpression(branch, node.condition);
         while (isTrue) {
-            node.parent = branch;
-            node.variables = {};
-            node.functions = {};
-            currVal = await this.runBranch(node);
+            currVal = await this.runBranch(node, branch);
             await this.evaluateExpression(branch, node.iterate);
             isTrue = await this.evaluateExpression(branch, node.condition);
             if (node.stopped)
@@ -407,32 +395,34 @@ export default class TicoProgram {
                     return f.apply(null, args);
                 }
                 else {
-                    f.variables = {};
-                    f.functions = {};
-                    f.stopped = false;
                     const fArgs = f.args;
+                    const variables = {};
                     for (let i = 0; i < fArgs.length; i++) {
                         const arg = fArgs[i];
                         const id = arg.id.id.match[0];
                         if (i >= args.length) {
                             if (arg.staticDefaultValue) {
-                                f.variables[id] = arg.defaultValueEvaluated;
+                                variables[id] = arg.defaultValueEvaluated;
                             }
                             else {
-                                f.variables[id] = await self.evaluateExpression(branch, arg.defaultValueExpression);
+                                variables[id] = await self.evaluateExpression(branch, arg.defaultValueExpression);
                             }
                         }
                         else {
-                            f.variables[id] = args[i];
+                            variables[id] = args[i];
                         }
                     }
-                    return await self.runBranch(f);
+                    return await self.runBranch(f, f.parent, variables);
                 }
             }
         };
     }
-    async runBranch(branch) {
+    async runBranch(branch, parent, variables = {}, functions = {}) {
         let retValue = undefined;
+        branch.parent = parent;
+        branch.stopped = false;
+        branch.variables = variables;
+        branch.functions = functions;
         for (const node of branch.children) {
             const v = await this.evaluateExpression(branch, node);
             if (v !== undefined)
@@ -507,16 +497,13 @@ export default class TicoProgram {
             },
             ...functions,
         };
-        this.mainBranch.variables = {};
-        this.mainBranch.functions = {};
-        this.mainBranch.stopped = false;
         this.execBatchStart = Date.now();
         this.stdoutBuffer = '';
         this.stderrBuffer = '';
         this.running = true;
         this.paused = false;
         try {
-            const val = await this.runBranch(this.mainBranch);
+            const val = await this.runBranch(this.mainBranch, null);
             this.running = false;
             this.flushStdBuffers();
             return val;
