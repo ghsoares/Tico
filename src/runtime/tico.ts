@@ -262,7 +262,7 @@ export default class TicoProgram {
 			}
 		} catch (e) {
 			this.flushStdBuffers();
-			if (this.onStderr) {
+			if (this.onStderr && e !== 'TICO_PROGRAM_STOP') {
 				return this.onStderr(e);
 			}
 			throw e;
