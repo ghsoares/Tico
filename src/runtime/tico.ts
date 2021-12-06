@@ -191,12 +191,15 @@ export default class TicoProgram {
 	private stderrBuffer: string;
 	private onStdout: (msg: any) => any;
 	private onStderr: (msg: any) => any;
+	private running: boolean;
+	private paused: boolean;
 
 	public constructor(sourceCode: string) {
 		this.sourceCode = sourceCode;
 		this.mainBranch = new TicoParser().parse(sourceCode);
 		this.execBatchMS = 15;
 		this.waitMS = 0;
+		this.running = false;
 	}
 
 	private throwError(msg: string, node: Node): void {
@@ -204,6 +207,13 @@ export default class TicoProgram {
 	}
 
 	private async evaluateExpression(branch: BranchNode, node: Node): Promise<any> {
+		if (!this.running) throw 'TICO_PROGRAM_STOP'; 
+		if (this.paused) {
+			while (this.paused) {
+				await wait(this.waitMS);
+			}
+		}
+
 		if (Date.now() - this.execBatchStart > this.execBatchMS) {
 			this.flushStdBuffers();
 			await wait(this.waitMS);
@@ -680,6 +690,8 @@ export default class TicoProgram {
 		variables: TicoVariables = {},
 		functions: TicoFunctions = {}
 	): Promise<any> {
+		if (this.running) throw new Error(`Program is already running`);
+
 		this.variables = {
 			...variables
 		};
@@ -729,7 +741,28 @@ export default class TicoProgram {
 		this.execBatchStart = Date.now();
 		this.stdoutBuffer = '';
 		this.stderrBuffer = '';
+		this.running = true;
+		this.paused = false;
 
-		return await this.runBranch(this.mainBranch);
+		try {
+			return await this.runBranch(this.mainBranch);
+		} catch (e) {
+			if (e === 'TICO_PROGRAM_STOP') {
+				return null;
+			}
+			throw e;
+		}
+	}
+
+	public stop(): void {
+		this.running = false;
+	}
+
+	public pause(): void {
+		this.paused = true;
+	}
+
+	public resume(): void {
+		this.paused = false;
 	}
 }

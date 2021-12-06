@@ -168,6 +168,8 @@ export default class TicoProgram {
     private stderrBuffer;
     private onStdout;
     private onStderr;
+    private running;
+    private paused;
     constructor(sourceCode: string);
     private throwError;
     private evaluateExpression;
@@ -190,4 +192,7 @@ export default class TicoProgram {
     setStdout(callback: (what: any) => any): void;
     setStderr(callback: (what: any) => any): void;
     run(variables?: TicoVariables, functions?: TicoFunctions): Promise<any>;
+    stop(): void;
+    pause(): void;
+    resume(): void;
 }
